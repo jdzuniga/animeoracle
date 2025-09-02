@@ -1,0 +1,9 @@
+{
+    "lgb__colsample_bytree": 0.6,
+    "lgb__learning_rate": 0.1,
+    "lgb__max_depth": 10,
+    "lgb__min_child_samples": 50,
+    "lgb__n_estimators": 200,
+    "lgb__num_leaves": 63,
+    "lgb__subsample": 0.6
+}

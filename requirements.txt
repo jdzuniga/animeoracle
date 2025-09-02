@@ -1,0 +1,9 @@
+scikit-learn
+pandas==2.3.1
+numpy
+pyarrow
+matplotlib
+seaborn
+requests
+streamlit
+lightgbm
