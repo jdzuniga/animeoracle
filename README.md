@@ -1,4 +1,4 @@
-# Anime Score Prediction
+# Anime Oracle
 
 ## Project Overview
 This project predicts anime scores using historical data and features such as producers, studios, genres, and more. The goal is to provide anime enthusiasts with insights into the potential popularity of currently airing and upcoming shows. While still in its early stages, the project lays the foundation for more advanced improvements in the future.
