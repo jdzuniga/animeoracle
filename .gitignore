@@ -1,2 +1,9 @@
 src/__pycache__/
+data/
+models/
+notebooks/
+posters/
+predictions/
+.idea/
+Dockerfile
 *.pyc

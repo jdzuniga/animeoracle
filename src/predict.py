@@ -2,45 +2,59 @@ from os import makedirs
 import joblib
 import pandas as pd
 
-from src.config import DATA_DIR, MODELS_DIR, RUN_DATE, PREDICTIONS_DIR, TARGET_VARIABLE
+from .config import DATA_DIR, MODELS_DIR, RUN_DATE, PREDICTIONS_DIR, TARGET_VARIABLE
 
 
-
-def create_predictions_directory() -> None:
-    path = f'{PREDICTIONS_DIR}/{RUN_DATE}'
+def create_directory() -> None:
+    path = f'../{PREDICTIONS_DIR}/{RUN_DATE}'
     makedirs(path, exist_ok=True)
+
 
 def predict_airing(model):
     anime_airing = pd.read_parquet(f'../{DATA_DIR}/{RUN_DATE}/anime_cleaned_airing.parquet')
     X = anime_airing.drop(TARGET_VARIABLE, axis=1)
-    predictions = pd.DataFrame(model.predict(X), index=X.index, columns=['predicted_score'])
-    df = predictions.join(X['members'], how='inner')
+    y = anime_airing[TARGET_VARIABLE]
+    predictions = model.predict(X)
+    predictions = [round(x, 2) for x in predictions]
+
+    airing_pred = pd.DataFrame(predictions, index=X.index, columns=['predicted_score'])
+
+    df = airing_pred.join(y, how='inner')
+    df = df.join(X[['title', 'members', 'image_url']], how='inner')
+
     return df
+
 
 def predict_unreleased(model):
     anime_unreleased = pd.read_parquet(f'../{DATA_DIR}/{RUN_DATE}/anime_cleaned_unreleased.parquet')
     X = anime_unreleased.drop(TARGET_VARIABLE, axis=1)
-    predictions = pd.DataFrame(model.predict(X),index=X.index, columns=['predicted_score'])
+    predictions = model.predict(X)
+    predictions = [round(x, 2) for x in predictions]
 
-    anime_released_years = pd.DataFrame({'year': pd.to_datetime(X['datetime']).dt.year},
-                                        index=X.index)
-    df = predictions.join(X['members'], how='inner').join(anime_released_years, how='inner')
+    unreleased = pd.DataFrame(predictions, index=X.index, columns=['predicted_score'])
+
+    anime_released_years = pd.DataFrame({'year': pd.to_datetime(X['datetime']).dt.year}, index=X.index)
+
+    df = unreleased.join(X[['title', 'members', 'image_url']], how='inner').join(anime_released_years, how='inner')
     return df
 
+
 def save_airing_predictions(predictions):
-    predictions.to_csv(f'{PREDICTIONS_DIR}/{RUN_DATE}/predictions_airing.csv', index=True)
+    predictions.to_csv(f'../{PREDICTIONS_DIR}/{RUN_DATE}/predictions_airing.csv', index=True)
+
 
 def save_airing_unreleased(predictions):
-    predictions.to_csv(f'{PREDICTIONS_DIR}/{RUN_DATE}/predictions_unreleased.csv', index=True)
+    predictions.to_csv(f'../{PREDICTIONS_DIR}/{RUN_DATE}/predictions_unreleased.csv', index=True)
+
 
 def keep_most_popular_anime(df, members):
     return df.nlargest(members, 'members')
 
 
-def main():
-    create_predictions_directory()
+def run():
+    create_directory()
 
-    model = joblib.load(f'{MODELS_DIR}/{RUN_DATE}/model.pkl')
+    model = joblib.load(f'../{MODELS_DIR}/{RUN_DATE}/model.pkl')
 
     airing_predictions = predict_airing(model)
     unreleased_predictions = predict_unreleased(model)
@@ -53,5 +67,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    run()
 

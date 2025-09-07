@@ -4,7 +4,7 @@ import time
 import numpy as np
 import pandas as pd
 import requests
-from src.config import SINGLE_VALUE_FIELDS, MULTI_VALUE_FIELDS, TARGET_VARIABLE, DATA_DIR, RUN_DATE
+from src.config import (SINGLE_VALUE_FIELDS, MULTI_VALUE_FIELDS, TARGET_VARIABLE, DATA_DIR, RUN_DATE)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 SCRAPE_FROM_YEAR = 2000
 SCRAPE_TO_YEAR = 2027
 
-COLUMNS = ['title', *SINGLE_VALUE_FIELDS, *MULTI_VALUE_FIELDS, 'datetime', TARGET_VARIABLE]
+COLUMNS = ['title', *SINGLE_VALUE_FIELDS, *MULTI_VALUE_FIELDS, 'image_url', 'datetime', TARGET_VARIABLE]
 
 def is_jikan_online(timeout: int=5) -> bool:
     url = 'https://api.jikan.moe/v4'
@@ -76,6 +76,8 @@ def scrape_anime(from_year: int, to_year: int) -> list[dict]:
 
                     anime_dict['datetime'] = anime.get('aired', {}).get('from', np.nan)
 
+                    anime_dict['image_url'] = anime.get('images').get('webp').get('large_image_url')
+
                     scraped_anime.append(anime_dict)
 
                 if not anime_json.get('pagination', {}).get('has_next_page'):
@@ -91,29 +93,27 @@ def scrape_anime(from_year: int, to_year: int) -> list[dict]:
     return scraped_anime
 
 
-def create_data_directory() -> None:
-    date_str = RUN_DATE
-    path = f'../{DATA_DIR}/{date_str}'
+def create_directory() -> None:
+    path = f'../{DATA_DIR}/{RUN_DATE}'
     makedirs(path, exist_ok=True)
-    logger.info(f'Directory created at {path}')
-
+    
 
 def create_parquet(anime: pd.DataFrame) -> None:
-    date_str = RUN_DATE
-    path = f'../{DATA_DIR}/{date_str}/anime_raw.parquet'
+    path = f'../{DATA_DIR}/{RUN_DATE}/anime_raw.parquet'
     anime.to_parquet(path, engine="pyarrow", compression='snappy')
     logger.info(f'Scraped data saved at {path}.')
 
 
-def main() -> None:
+def run() -> None:
     data = scrape_anime(SCRAPE_FROM_YEAR, SCRAPE_TO_YEAR) if is_jikan_online() else []
     anime = pd.DataFrame(data, columns=COLUMNS)
 
     if not anime.empty:
+        create_directory()
         create_parquet(anime)
     else:
         logger.error('No data scraped because Jikan API is offline.')
     
 
 if __name__ == '__main__':
-    main()
+    run()

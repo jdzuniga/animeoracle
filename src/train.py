@@ -11,8 +11,8 @@ import joblib
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-import preprocess
-from config import DATA_DIR, MODELS_DIR, RUN_DATE, TARGET_VARIABLE
+from src import preprocess
+from src.config import DATA_DIR, MODELS_DIR, RUN_DATE, TARGET_VARIABLE
 
 
 def load_data():
@@ -93,7 +93,8 @@ def save_performance(performance):
     with open(f'../{MODELS_DIR}/{RUN_DATE}/performance.json', 'w') as f:
         json.dump({'mae': performance}, f, indent=4)
 
-def main():
+
+def run():
     anime_released = load_data()
 
     X_train, y_train, X_valid, y_valid = make_train_valid_split(anime_released)
@@ -117,7 +118,6 @@ def main():
     print("Best MAE:", -grid_search.best_score_)
     save_performance(-grid_search.best_score_)
 
-    
 
 if __name__ == '__main__':
-    main()
+    run()

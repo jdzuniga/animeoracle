@@ -1,15 +1,9 @@
-import argparse
 import logging
 import pandas as pd
 from src.config import TARGET_VARIABLE, DATA_DIR, RUN_DATE
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def get_date_arg() -> str:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--date", required=False, help="Run date in YYYY-MM-DD")
-    return parser.parse_args().date
 
 
 def fix_trailer_format(anime: pd.DataFrame) -> pd.DataFrame:
@@ -62,11 +56,9 @@ def create_parquet(anime: pd.DataFrame, file_name: str, date: str) -> None:
     logger.info(f'{file_str} saved at {path}.')
 
 
-def main() -> None:
-    parse_date = get_date_arg()
-    date = parse_date if parse_date else RUN_DATE
+def run() -> None:
 
-    anime = pd.read_parquet(f'{DATA_DIR}/{date}/anime_raw.parquet')
+    anime = pd.read_parquet(f'../{DATA_DIR}/{RUN_DATE}/anime_raw.parquet')
     anime.set_index('mal_id', inplace=True)
     anime = fix_trailer_format(anime)
     anime = remove_duplicates(anime)
@@ -79,7 +71,7 @@ def main() -> None:
     anime_airing = get_airing_anime(anime)
     anime_unreleased = get_unreleased_anime(anime)
     
-    path = f'{DATA_DIR}/{date}/'
+    path = f'../{DATA_DIR}/{RUN_DATE}/'
     anime_released.to_parquet(f'{path}anime_cleaned_released.parquet', engine="pyarrow", compression='snappy')
     anime_airing.to_parquet(f'{path}anime_cleaned_airing.parquet', engine="pyarrow", compression='snappy')
     anime_unreleased.to_parquet(f'{path}anime_cleaned_unreleased.parquet', engine="pyarrow", compression='snappy')
@@ -87,4 +79,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run()
