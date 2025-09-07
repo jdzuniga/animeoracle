@@ -172,19 +172,19 @@ single_label_pipeline = Pipeline([
 multi_label_pipeline = Pipeline([
     ('mlb_imputer', MultiLabelImputer()),
     ('mlb', MultiLabelBinarizerTransformer()),
-    ('dim_reducer', DimensionalityReducer(n_components=10))
+    ('dim_reducer', DimensionalityReducer(n_components=6))
 ])
 
 preprocessor = ColumnTransformer(transformers=[
-    # ('process_title', title_pipeline, 'title'),
-    # ('sequel', is_sequel_pipeline, 'title'),
-    # ('year', year_pipeline, 'datetime'),
+    ('process_title', title_pipeline, 'title'),
+    ('sequel', is_sequel_pipeline, 'title'),
+    ('year', year_pipeline, 'datetime'),
     ('season', season_pipeline, 'datetime'),
-    # ('cat', single_label_pipeline, ['type', 'source', 'rating', 'trailer']),
-    # ('studios_label', multi_label_pipeline, 'studios'),
-    # ('producers_label', multi_label_pipeline, 'producers'),
-    # ('genres_label', multi_label_pipeline, 'genres'),
-    # ('themes_label', multi_label_pipeline, 'themes'),
-    # ('demographics_label', multi_label_pipeline, 'demographics')
+    ('cat', single_label_pipeline, ['type', 'source', 'rating', 'trailer']),
+    ('studios_label', multi_label_pipeline, 'studios'),
+    ('producers_label', multi_label_pipeline, 'producers'),
+    ('genres_label', multi_label_pipeline, 'genres'),
+    ('themes_label', multi_label_pipeline, 'themes'),
+    ('demographics_label', multi_label_pipeline, 'demographics')
     ],
     sparse_threshold=1.0)
