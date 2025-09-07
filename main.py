@@ -15,13 +15,13 @@ def main(step):
     elif step == "predict":
         predict.run()
     elif step == "posters":
-        get_anime_posters.run()
+        get_posters.run()
     elif step == "all":
         scrape.run()
         clean_data.run()
         train.run()
         predict.run()
-        get_anime_posters.run()
+        get_posters.run()
     else:
         raise ValueError(f"Unknown step: {step}")
 

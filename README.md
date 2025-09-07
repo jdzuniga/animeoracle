@@ -28,10 +28,8 @@ This project predicts anime scores using historical data and features such as pr
 
 ## Project Structure
 ```
-├── data/              # Raw and cleaned data
-├── models/            # Trained models (pkl files)
-├── predictions/       # Predictions
 ├── src/               # Source code
+├── main.py            # Entrypoint
 ├── app.py             # Streamlit app
 ├── requirements.txt   # Dependencies
 └── README.md          # Project description
@@ -42,6 +40,9 @@ This project predicts anime scores using historical data and features such as pr
 ```bash
 # Install dependencies
 pip install -r requirements.txt
+
+# Run the whole pipeline
+python main.py
 
 # Run the Streamlit app
 streamlit run app.py
