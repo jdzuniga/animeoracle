@@ -10,7 +10,7 @@ from src.config import (SINGLE_VALUE_FIELDS, MULTI_VALUE_FIELDS, TARGET_VARIABLE
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SCRAPE_FROM_YEAR = 2000
+SCRAPE_FROM_YEAR = 2010
 SCRAPE_TO_YEAR = 2027
 
 COLUMNS = ['title', *SINGLE_VALUE_FIELDS, *MULTI_VALUE_FIELDS, 'image_url', 'datetime', TARGET_VARIABLE]

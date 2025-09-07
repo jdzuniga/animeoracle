@@ -2,8 +2,8 @@ from datetime import date
 from pathlib import Path
 
 
-# RUN_DATE = date.today()
 RUN_DATE = date.fromisoformat('2025-09-03')
+RUN_DATE = date.today()
 
 SINGLE_VALUE_FIELDS = ['mal_id', 'favorites', 'members', 'type', 'source', 'rating', 'trailer', 'status']
 MULTI_VALUE_FIELDS = ['studios', 'producers', 'genres', 'themes', 'demographics']
