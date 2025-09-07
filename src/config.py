@@ -18,5 +18,5 @@ POSTERS_DIR = './posters'
 
 def create_directories():
     root = Path(__file__).resolve().parent.parent
-    for folder in ["data", "models", "posters", "predictions", "test"]:
+    for folder in ["data", "models", "posters", "predictions"]:
         (root / folder).mkdir(parents=True, exist_ok=True)
