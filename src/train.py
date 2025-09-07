@@ -1,4 +1,5 @@
-from os import makedirs
+from pathlib import Path
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import lightgbm as lgb
@@ -17,11 +18,14 @@ from src.config import DATA_DIR, MODELS_DIR, RUN_DATE, TARGET_VARIABLE
 
 def load_data():
     """Load the cleaned released anime parquet file."""
-    path = f"../{DATA_DIR}/{RUN_DATE}/anime_cleaned_released.parquet"
-    return pd.read_parquet(path)
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / DATA_DIR / RUN_DATE / 'anime_released_cleaned.parquet'
+    anime = pd.read_parquet(file_path)
+    return anime
+
 
 def make_train_valid_split(anime_released, training_year_window=4, valid_year_window=1):
-    current_year = RUN_DATE.year
+    current_year = datetime.strptime(RUN_DATE, "%Y-%m-%d").date().year
     anime_released_years = pd.to_datetime(anime_released['datetime']).dt.year
 
     valid = anime_released[(anime_released_years < current_year) & (anime_released_years >= current_year - valid_year_window)]
@@ -36,6 +40,7 @@ def make_train_valid_split(anime_released, training_year_window=4, valid_year_wi
     
     return X_train, y_train, X_valid, y_valid
 
+
 def make_predefined_split(X_train, X_valid):
     """Create PredefinedSplit for GridSearchCV."""
     split_index = np.concatenate([
@@ -43,6 +48,7 @@ def make_predefined_split(X_train, X_valid):
         np.zeros(len(X_valid), dtype=int)
     ])
     return PredefinedSplit(test_fold=split_index)
+
 
 def build_pipeline():
     """Build ML pipeline with preprocessing + LGBM."""
@@ -63,6 +69,15 @@ def get_param_grid():
         'lgb__subsample': [0.6, 0.8, 1.0],         # row sampling
         'lgb__colsample_bytree': [0.6, 1.0],  # feature sampling
     }
+    param_grid = {
+        'lgb__n_estimators': [200],
+        'lgb__learning_rate': [0.05],
+        'lgb__num_leaves': [63],  # default 31, higher = more complex
+        'lgb__max_depth': [10, 20],
+        'lgb__min_child_samples': [10, 20, 50],
+        'lgb__subsample': [0.8],  # row sampling
+        'lgb__colsample_bytree': [0.6, 1.0],  # feature sampling
+    }
     return param_grid
 
 def run_grid_search(pipeline, param_grid, X, y, ps):
@@ -78,19 +93,29 @@ def run_grid_search(pipeline, param_grid, X, y, ps):
     grid_search.fit(X, y)
     return grid_search
 
-def create_model_directory() -> None:
-    path = f'../{MODELS_DIR}/{RUN_DATE}'
-    makedirs(path, exist_ok=True)
+
+def create_directory() -> None:
+    root = Path(__file__).resolve().parent.parent
+    (root / MODELS_DIR / RUN_DATE).mkdir(parents=True, exist_ok=True)
+
 
 def save_model(model):
-    joblib.dump(model, f'../{MODELS_DIR}/{RUN_DATE}/model.pkl')
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / MODELS_DIR / RUN_DATE / 'model.pkl'
+    joblib.dump(model, file_path)
 
-def save_parameters(hyperparams):
-    with open(f'../{MODELS_DIR}/{RUN_DATE}/hyperparams.json', 'w') as f:
+
+def save_hyperparameters(hyperparams):
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / MODELS_DIR / RUN_DATE / 'hyperparams.json'
+    with open(file_path, 'w') as f:
         json.dump(hyperparams, f, indent=4)
 
+
 def save_performance(performance):
-    with open(f'../{MODELS_DIR}/{RUN_DATE}/performance.json', 'w') as f:
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / MODELS_DIR / RUN_DATE / 'performance.json'
+    with open(file_path, 'w') as f:
         json.dump({'mae': performance}, f, indent=4)
 
 
@@ -108,10 +133,10 @@ def run():
 
     grid_search = run_grid_search(pipeline, param_grid, X, y, ps)
 
-    create_model_directory()
+    create_directory()
 
     best_params = grid_search.best_params_
-    save_parameters(best_params)
+    save_hyperparameters(best_params)
 
     save_model(grid_search.best_estimator_)
 

@@ -66,7 +66,7 @@ class MultiLabelImputer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X = X.copy()
-        X  = X.apply(lambda x: np.array(['Unknown']) if isinstance(x, np.ndarray) and len(x) == 0 else x)
+        X = X.apply(lambda x: np.array(['Unknown']) if isinstance(x, np.ndarray) and len(x) == 0 else x)
         return X
     
     def get_feature_names_out(self, input_features=None):
@@ -123,14 +123,13 @@ class AddYear(BaseEstimator, TransformerMixin):
 class AddSeason(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
-    
+
     def transform(self, X, y=None):
         X = X.copy()
         X = pd.to_datetime(X).dt.month
         seasons = X.apply(self.month_to_season)
-        seasons_one_hot = pd.get_dummies(seasons)
-        return seasons_one_hot
-    
+        return pd.DataFrame(seasons)
+
     def month_to_season(self, month: int) -> str:
         if month in [12, 1, 2]:
             return "Winter"
@@ -142,11 +141,10 @@ class AddSeason(BaseEstimator, TransformerMixin):
             return "Fall"
         else:
             return None
-    
+
     def get_feature_names_out(self, input_features=None):
         return np.array(['Winter', 'Spring', 'Summer', 'Fall']) 
     
-
 
 title_pipeline = Pipeline([
     ('clean_text', CleanText()),
@@ -163,6 +161,7 @@ year_pipeline = Pipeline([
 
 season_pipeline = Pipeline([
     ('season', AddSeason()),
+    ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
 ])
 
 single_label_pipeline = Pipeline([
@@ -178,14 +177,14 @@ multi_label_pipeline = Pipeline([
 
 preprocessor = ColumnTransformer(transformers=[
     # ('process_title', title_pipeline, 'title'),
-    ('sequel', is_sequel_pipeline, 'title'),
-    ('year', year_pipeline, 'datetime'),
+    # ('sequel', is_sequel_pipeline, 'title'),
+    # ('year', year_pipeline, 'datetime'),
     ('season', season_pipeline, 'datetime'),
-    ('cat', single_label_pipeline, ['type', 'source', 'rating', 'trailer']),
-    ('studios_label', multi_label_pipeline, 'studios'),
-    ('producers_label', multi_label_pipeline, 'producers'),
+    # ('cat', single_label_pipeline, ['type', 'source', 'rating', 'trailer']),
+    # ('studios_label', multi_label_pipeline, 'studios'),
+    # ('producers_label', multi_label_pipeline, 'producers'),
     # ('genres_label', multi_label_pipeline, 'genres'),
-    ('themes_label', multi_label_pipeline, 'themes'),
+    # ('themes_label', multi_label_pipeline, 'themes'),
     # ('demographics_label', multi_label_pipeline, 'demographics')
     ],
     sparse_threshold=1.0)

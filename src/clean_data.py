@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 import pandas as pd
 from src.config import TARGET_VARIABLE, DATA_DIR, RUN_DATE
 
@@ -7,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def fix_trailer_format(anime: pd.DataFrame) -> pd.DataFrame:
-    anime['trailer'] = anime['trailer'].apply(lambda x: False if x['url'] == None else True)
+    anime['trailer'] = anime['trailer'].apply(lambda x: False if x['url'] is None else True)
     return anime
 
 
@@ -21,7 +22,7 @@ def remove_duplicates(anime: pd.DataFrame) -> pd.DataFrame:
 def remove_unsafe_ratings(anime: pd.DataFrame) -> pd.DataFrame:
     unsafe_ratings = anime['rating'] == "Rx - Hentai"
     anime = anime[~unsafe_ratings]
-    logger.info(f"{(unsafe_ratings).sum()} unsafe ratings dropped.\n")
+    logger.info(f"{unsafe_ratings.sum()} unsafe ratings dropped.\n")
     return anime
 
 
@@ -49,16 +50,22 @@ def remove_unlabeled_anime(anime_released: pd.DataFrame) -> pd.DataFrame:
     return anime_released.dropna(subset=[TARGET_VARIABLE])
 
 
-def create_parquet(anime: pd.DataFrame, file_name: str, date: str) -> None:
-    file_str = file_name + '_cleaned.parquet'
-    path = f'{DATA_DIR}/{date}/'
-    anime.to_parquet(f'{path}{file_str}', engine="pyarrow", compression='snappy')
-    logger.info(f'{file_str} saved at {path}.')
+def load_data():
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / DATA_DIR / RUN_DATE / f'anime_raw.parquet'
+    anime = pd.read_parquet(file_path)
+    return anime
+
+
+def create_parquet(anime: pd.DataFrame, file_name: str) -> None:
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / DATA_DIR / RUN_DATE / f'{file_name}_cleaned.parquet'
+    anime.to_parquet(file_path, engine="pyarrow", compression='snappy')
+    logger.info(f'Cleaned data saved at {file_path}.')
 
 
 def run() -> None:
-
-    anime = pd.read_parquet(f'../{DATA_DIR}/{RUN_DATE}/anime_raw.parquet')
+    anime = load_data()
     anime.set_index('mal_id', inplace=True)
     anime = fix_trailer_format(anime)
     anime = remove_duplicates(anime)
@@ -70,12 +77,10 @@ def run() -> None:
 
     anime_airing = get_airing_anime(anime)
     anime_unreleased = get_unreleased_anime(anime)
-    
-    path = f'../{DATA_DIR}/{RUN_DATE}/'
-    anime_released.to_parquet(f'{path}anime_cleaned_released.parquet', engine="pyarrow", compression='snappy')
-    anime_airing.to_parquet(f'{path}anime_cleaned_airing.parquet', engine="pyarrow", compression='snappy')
-    anime_unreleased.to_parquet(f'{path}anime_cleaned_unreleased.parquet', engine="pyarrow", compression='snappy')
-    logger.info(f'Cleaned files saved at {path}.')
+
+    create_parquet(anime_released, 'anime_released')
+    create_parquet(anime_airing, 'anime_airing')
+    create_parquet(anime_unreleased, 'anime_unreleased')
 
 
 if __name__ == "__main__":

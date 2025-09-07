@@ -1,4 +1,5 @@
 # from PIL import Image
+from pathlib import Path
 import streamlit as st
 import pandas as pd
 from src.config import PREDICTIONS_DIR, RUN_DATE, POSTERS_DIR
@@ -185,10 +186,13 @@ def shorten_text(series, length):
 
 @st.cache_data
 def load_predictions():
-    airing = pd.read_csv(f'{PREDICTIONS_DIR}/{RUN_DATE}/predictions_airing.csv')
-    unreleased = pd.read_csv(f'{PREDICTIONS_DIR}/{RUN_DATE}/predictions_unreleased.csv')
+    root = Path(__file__).resolve().parent
+    airing_path = root / PREDICTIONS_DIR / RUN_DATE / 'predictions_airing.csv'
+    unreleased_path = root / PREDICTIONS_DIR / RUN_DATE / 'predictions_unreleased.csv'
 
-    
+    airing = pd.read_csv(airing_path)
+    unreleased = pd.read_csv(unreleased_path)
+
     return airing, unreleased
 
 

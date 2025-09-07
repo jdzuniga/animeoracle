@@ -1,5 +1,5 @@
+from pathlib import Path
 import logging
-from os import makedirs
 import pandas as pd
 import requests
 
@@ -8,14 +8,20 @@ from src.config import RUN_DATE, PREDICTIONS_DIR, POSTERS_DIR
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+root = Path(__file__).resolve().parent.parent
+
 
 def create_directory():
-    makedirs(f'../{POSTERS_DIR}/{RUN_DATE}', exist_ok=True)
+    (root / POSTERS_DIR / RUN_DATE).mkdir(parents=True, exist_ok=True)
 
 
 def get_images_info():
-    airing = pd.read_csv(f'../{PREDICTIONS_DIR}/{RUN_DATE}/predictions_airing.csv')
-    unreleased = pd.read_csv(f'../{PREDICTIONS_DIR}/{RUN_DATE}/predictions_unreleased.csv')
+    airing_path = root / PREDICTIONS_DIR / RUN_DATE / 'predictions_airing.csv'
+    unreleased_path = root / PREDICTIONS_DIR / RUN_DATE / 'predictions_unreleased.csv'
+
+    airing = pd.read_csv(airing_path)
+    unreleased = pd.read_csv(unreleased_path)
+
     info = pd.concat([airing[['mal_id', 'image_url']], unreleased[['mal_id', 'image_url']]], ignore_index=True)
     return info 
 
@@ -27,7 +33,8 @@ def download_posters(info: pd.DataFrame):
         url = anime['image_url']
         response = requests.get(url)
         if response.status_code == 200:
-            with open(f'../{POSTERS_DIR}/{RUN_DATE}/{file_name}', 'wb') as f:
+            file_path = root / POSTERS_DIR / RUN_DATE / file_name
+            with open(file_path, 'wb') as f:
                 f.write(response.content)
         else:
             logger.error(f'Error fetching {url}.')

@@ -48,7 +48,7 @@ pip install -r requirements.txt
 python main.py
 
 # Run the Streamlit app
-streamlit run app.py
+streamlit run webapp.py
 ```
 
 ## Model

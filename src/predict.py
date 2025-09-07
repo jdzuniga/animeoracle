@@ -1,17 +1,23 @@
-from os import makedirs
+from pathlib import Path
 import joblib
 import pandas as pd
 
-from .config import DATA_DIR, MODELS_DIR, RUN_DATE, PREDICTIONS_DIR, TARGET_VARIABLE
+from src.config import DATA_DIR, MODELS_DIR, RUN_DATE, PREDICTIONS_DIR, TARGET_VARIABLE
 
 
 def create_directory() -> None:
-    path = f'../{PREDICTIONS_DIR}/{RUN_DATE}'
-    makedirs(path, exist_ok=True)
+    root = Path(__file__).resolve().parent.parent
+    (root / PREDICTIONS_DIR / RUN_DATE).mkdir(parents=True, exist_ok=True)
+
+
+def load_model():
+    file_path = Path(__file__).resolve().parent.parent / MODELS_DIR / RUN_DATE / 'model.pkl'
+    return joblib.load(file_path)
 
 
 def predict_airing(model):
-    anime_airing = pd.read_parquet(f'../{DATA_DIR}/{RUN_DATE}/anime_cleaned_airing.parquet')
+    file_path = Path(__file__).resolve().parent.parent / DATA_DIR / RUN_DATE / 'anime_airing_cleaned.parquet'
+    anime_airing = pd.read_parquet(file_path)
     X = anime_airing.drop(TARGET_VARIABLE, axis=1)
     y = anime_airing[TARGET_VARIABLE]
     predictions = model.predict(X)
@@ -26,7 +32,8 @@ def predict_airing(model):
 
 
 def predict_unreleased(model):
-    anime_unreleased = pd.read_parquet(f'../{DATA_DIR}/{RUN_DATE}/anime_cleaned_unreleased.parquet')
+    file_path = Path(__file__).resolve().parent.parent / DATA_DIR / RUN_DATE / 'anime_unreleased_cleaned.parquet'
+    anime_unreleased = pd.read_parquet(file_path)
     X = anime_unreleased.drop(TARGET_VARIABLE, axis=1)
     predictions = model.predict(X)
     predictions = [round(x, 2) for x in predictions]
@@ -40,11 +47,15 @@ def predict_unreleased(model):
 
 
 def save_airing_predictions(predictions):
-    predictions.to_csv(f'../{PREDICTIONS_DIR}/{RUN_DATE}/predictions_airing.csv', index=True)
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / PREDICTIONS_DIR / RUN_DATE / 'predictions_airing.csv'
+    predictions.to_csv(file_path, index=True)
 
 
 def save_airing_unreleased(predictions):
-    predictions.to_csv(f'../{PREDICTIONS_DIR}/{RUN_DATE}/predictions_unreleased.csv', index=True)
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / PREDICTIONS_DIR / RUN_DATE / 'predictions_unreleased.csv'
+    predictions.to_csv(file_path, index=True)
 
 
 def keep_most_popular_anime(df, members):
@@ -54,7 +65,7 @@ def keep_most_popular_anime(df, members):
 def run():
     create_directory()
 
-    model = joblib.load(f'../{MODELS_DIR}/{RUN_DATE}/model.pkl')
+    model = load_model()
 
     airing_predictions = predict_airing(model)
     unreleased_predictions = predict_unreleased(model)

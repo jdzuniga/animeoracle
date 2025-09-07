@@ -4,7 +4,6 @@ from src import config, scrape, clean_data, train, predict, get_posters
 
 def main(step):
     config.create_directories()
-    print(config.RUN_DATE)
 
     if step == "scrape":
         scrape.run()

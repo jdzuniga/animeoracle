@@ -1,4 +1,4 @@
-from os import makedirs
+from pathlib import Path
 import logging
 import time
 import numpy as np
@@ -94,14 +94,15 @@ def scrape_anime(from_year: int, to_year: int) -> list[dict]:
 
 
 def create_directory() -> None:
-    path = f'../{DATA_DIR}/{RUN_DATE}'
-    makedirs(path, exist_ok=True)
-    
+    root = Path(__file__).resolve().parent.parent
+    (root / DATA_DIR / RUN_DATE).mkdir(parents=True, exist_ok=True)
+
 
 def create_parquet(anime: pd.DataFrame) -> None:
-    path = f'../{DATA_DIR}/{RUN_DATE}/anime_raw.parquet'
-    anime.to_parquet(path, engine="pyarrow", compression='snappy')
-    logger.info(f'Scraped data saved at {path}.')
+    root = Path(__file__).resolve().parent.parent
+    file_path = root / DATA_DIR / RUN_DATE / 'anime_raw.parquet'
+    anime.to_parquet(file_path, engine="pyarrow", compression='snappy')
+    logger.info(f'Scraped data saved at {file_path}.')
 
 
 def run() -> None:
