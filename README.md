@@ -38,6 +38,9 @@ This project predicts anime scores using historical data and features such as pr
 ## Running the App
 
 ```bash
+# Clone the repo
+git clone https://github.com/jdzuniga/animeoracle.git
+
 # Install dependencies
 pip install -r requirements.txt
 

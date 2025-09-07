@@ -1,8 +1,8 @@
-scikit-learn
+scikit-learn==1.7.1
 pandas==2.3.1
-numpy
-pyarrow
-requests
-streamlit
-lightgbm
-joblib
+numpy==2.3.2
+pyarrow==19.0.0
+requests==2.32.4
+streamlit==1.47.1
+lightgbm==4.6.0
+joblib==1.5.1
