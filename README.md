@@ -30,7 +30,7 @@ This project predicts anime scores using historical data and features such as pr
 ```
 ├── src/               # Source code
 ├── main.py            # Entrypoint
-├── app.py             # Streamlit app
+├── webapp.py          # Streamlit app
 ├── requirements.txt   # Dependencies
 └── README.md          # Project description
 ```
