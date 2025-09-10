@@ -3,17 +3,13 @@
 ## Project Overview
 This project predicts anime scores using historical data and features such as producers, studios, genres, and more. The goal is to provide anime enthusiasts with insights into the potential popularity of currently airing and upcoming shows. While still in its early stages, the project lays the foundation for more advanced improvements in the future.
 
+---
+
 ## Website
+[![Streamlit](https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white)](https://animeoracle.azurewebsites.net/)
 [![Streamlit App](https://img.shields.io/badge/Website-Live-green?style=for-the-badge&logo=streamlit)](https://animeoracle.azurewebsites.net/)
 - Top 50 Popular Anime with predicted scores
 - Unreleased Anime Predictions by release year
-
-## Data & Features
-- Source: Scraped from [MyAnimeList](https://myanimelist.net) using the **Jikan API**.
-- Title (TF-IDF encoding)
-- Studios, Demographics, Genres, Themes, Producers (multi-label encoding)
-- Type, Source, Rating, Trailer indicator, Sequel indicator (one-hot encoding)
-- Datetime Features: release year, season
 
 ---
 
@@ -25,6 +21,16 @@ This project predicts anime scores using historical data and features such as pr
 - **Streamlit** (web app framework)
 - **Azure** (deployment & hosting)
 
+---
+
+## Data & Features
+- Source: Scraped from [MyAnimeList](https://myanimelist.net) using the **Jikan API**.
+- Title (TF-IDF encoding)
+- Studios, Demographics, Genres, Themes, Producers (multi-label encoding)
+- Type, Source, Rating, Trailer indicator, Sequel indicator, Season (one-hot encoding)
+- Year of release
+
+---
 
 ## Project Structure
 ```
@@ -51,14 +57,22 @@ python main.py
 streamlit run webapp.py
 ```
 
-## Model
-The prediction pipeline includes:
-- Preprocessing: Encoding, imputation, scaling
-- Dimensionality Reduction (TruncatedSVD for sparse data)
+## Model & Prediction Pipeline
+Preprocessing
+- Encoding (TF-IDF, One-hot, Multi-label)
+- Imputation for missing values
+- Scaling numerical features
 
-## Results
+Dimensionality Reduction: TruncatedSVD for sparse features
+
+Modeling: LightGBM regressor tuned for root mean squared error (RMSE)
+
+## Performance
 - Baseline heuristic MAE: ~0.70
-- LightGBM MAE: ~0.40
+- LightGBM
+  - MAE: ~0.40
+  - RMSE: ~0.50
+  - R²: ~0.50
 
 ## Future Improvements
 - Implement more robust feature selection to improve model accuracy  

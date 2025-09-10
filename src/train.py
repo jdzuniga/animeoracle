@@ -6,7 +6,7 @@ import lightgbm as lgb
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import PredefinedSplit
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import make_scorer, mean_absolute_error
+from sklearn.metrics import make_scorer, mean_absolute_error, root_mean_squared_error, r2_score
 import json
 import joblib
 import warnings
@@ -52,7 +52,7 @@ def make_predefined_split(X_train, X_valid):
 
 def build_pipeline():
     """Build ML pipeline with preprocessing + LGBM."""
-    model = lgb.LGBMRegressor(random_state=42, n_jobs=-1)
+    model = lgb.LGBMRegressor(objective='regression_l2', random_state=42, n_jobs=-1)
     return Pipeline([
         ('preprocessor', preprocess.preprocessor),
         ('lgb', model)
@@ -61,31 +61,42 @@ def build_pipeline():
 def get_param_grid():
     """Return hyperparameter grid for tuning."""
     param_grid = {
-        'lgb__n_estimators': [200, 500],
-        'lgb__learning_rate': [0.01, 0.05, 0.1],
-        'lgb__num_leaves': [31, 63],          # default 31, higher = more complex
-        'lgb__max_depth': [10, 20],       
-        'lgb__min_child_samples': [10, 20, 50],
-        'lgb__subsample': [0.6, 0.8, 1.0],         # row sampling
-        'lgb__colsample_bytree': [0.6, 1.0],  # feature sampling
+        "lgb__bagging_fraction": [1.0],
+        "lgb__colsample_bytree": [0.6],
+        "lgb__feature_fraction": [1.0],
+        "lgb__learning_rate": [0.05, 0.1],
+        "lgb__max_depth": [20],
+        "lgb__min_child_samples": [20],
+        "lgb__n_estimators": [200, 500],
+        "lgb__num_leaves": [31],
+        "lgb__subsample": [0.6]
     }
-    param_grid = {
-        'lgb__n_estimators': [200],
-        'lgb__learning_rate': [0.05],
-        'lgb__num_leaves': [63],  # default 31, higher = more complex
+    param_grid_extended = {
+        'lgb__n_estimators': [200, 500, 750],
+        'lgb__learning_rate': [0.01, 0.05, 0.1],
+        'lgb__num_leaves': [31, 63],
         'lgb__max_depth': [10, 20],
-        'lgb__min_child_samples': [10, 20, 50],
-        'lgb__subsample': [0.8],  # row sampling
-        'lgb__colsample_bytree': [0.6, 1.0],  # feature sampling
+        'lgb__min_child_samples': [10, 20],
+        'lgb__subsample': [0.6, 0.8],
+        'lgb__colsample_bytree': [0.6, 1.0],
+        "lgb__feature_fraction": [0.8, 1.0],
+        "lgb__bagging_fraction": [0.8, 1.0],
     }
     return param_grid
 
 def run_grid_search(pipeline, param_grid, X, y, ps):
+    scoring = {
+        "MAE": make_scorer(mean_absolute_error, greater_is_better=False),
+        "RMSE": make_scorer(root_mean_squared_error, greater_is_better=False),
+        "R2": make_scorer(r2_score)
+    }
+
     """Run grid search with PredefinedSplit."""
     grid_search = GridSearchCV(
         estimator=pipeline,
         param_grid=param_grid,
-        scoring=make_scorer(mean_absolute_error, greater_is_better=False),
+        scoring=scoring,
+        refit="RMSE",
         cv=ps,
         verbose=2,
         n_jobs=-1
@@ -116,7 +127,7 @@ def save_performance(performance):
     root = Path(__file__).resolve().parent.parent
     file_path = root / MODELS_DIR / RUN_DATE / 'performance.json'
     with open(file_path, 'w') as f:
-        json.dump({'mae': performance}, f, indent=4)
+        json.dump(performance, f, indent=4)
 
 
 def run():
@@ -140,8 +151,20 @@ def run():
 
     save_model(grid_search.best_estimator_)
 
-    print("Best MAE:", -grid_search.best_score_)
-    save_performance(-grid_search.best_score_)
+    mae = -grid_search.cv_results_["mean_test_MAE"].max()
+    rmse = -grid_search.cv_results_["mean_test_RMSE"].max()
+    r2 = grid_search.cv_results_["mean_test_R2"].max()
+
+    print("Best MAE: ", round(mae, 2))
+    print("Best RMSE: ", round(rmse, 2))
+    print("Best R2: ", round(r2, 2))
+
+    performance = {
+        "MAE": mae,
+        "RMSE": rmse,
+        "R2": r2
+    }
+    save_performance(performance)
 
 
 if __name__ == '__main__':
