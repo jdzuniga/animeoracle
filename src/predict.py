@@ -70,8 +70,8 @@ def run():
     airing_predictions = predict_airing(model)
     unreleased_predictions = predict_unreleased(model)
 
-    airing_predictions = keep_most_popular_anime(airing_predictions, 50)
-    unreleased_predictions = keep_most_popular_anime(unreleased_predictions, 50)
+    airing_predictions = keep_most_popular_anime(airing_predictions, 100)
+    unreleased_predictions = keep_most_popular_anime(unreleased_predictions, 100)
 
     save_airing_predictions(airing_predictions)
     save_airing_unreleased(unreleased_predictions)

@@ -5,26 +5,20 @@ import pandas as pd
 from src.config import PREDICTIONS_DIR, RUN_DATE, POSTERS_DIR
 
 st.set_page_config(layout='wide')
-title = 'Anime Score Predictions'
-st.markdown(f"<h1 style='font-size: 60px;color:#F53B5C;text-align:center;'>🌸{title}🌸</h1>", unsafe_allow_html=True)
+title = 'Anime Oracle'
+st.markdown(f"<h1 style='font-size: 70px;color:#FFFFFF;text-align:center;'>{title}</h1>", unsafe_allow_html=True)
 
 tab1, tab2 = st.tabs(["📅 Predictions ", "📊 Statistics"])
-
 
 with tab1:
     st.caption(
     """
-    Predictions are shown for the Top 50 most popular currently airing anime and the Top 50 most anticipated upcoming anime.
+    Predictions are shown for the most popular currently airing anime and the most anticipated upcoming anime.
         """
     )
     st.caption(
         """
-        The accuracy will continue to improve over time.
-        """
-    )
-    st.caption(
-        """
-        The site is updated monthly, so check back for the latest results!
+        The accuracy will continue to improve over time. The site is updated monthly, so check back for the latest results!
         """
     )
     st.markdown(
@@ -69,7 +63,7 @@ col1, _, col2 = st.columns([1, 0.1, 1])
 def show_airing(airing):
     columns_per_row = 4
     with col1:
-        st.markdown("<h1 style='color:#63CAF2;text-align:center;'>Currently Airing</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='color:#63CAF2;text-align:center;'>Top 100 Currently Airing</h1>", unsafe_allow_html=True)
         (airing_tab,) = st.tabs(["Airing"])
         with airing_tab:
             for i in range(0, len(airing), columns_per_row):
@@ -126,7 +120,7 @@ def show_unreleased(unreleased):
     years = sorted(unreleased['year'].unique().tolist())
 
     with col2:
-        st.markdown(f"<h1 style='color:#F5ED5D;text-align:center;'>Unreleased Anime</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='color:#F5ED5D;text-align:center;'>Top 100 Unreleased Anime</h1>", unsafe_allow_html=True)
         tabs = st.tabs([str(year) + ' Forecast' for year in years])
         years_tabs = [*tabs]
         for year, tab in zip(years, years_tabs):
@@ -195,9 +189,19 @@ def load_predictions():
 
     return airing, unreleased
 
+def display_footer():
+    st.markdown(
+        f"""
+        <hr>
+        <p style='text-align: center; font-size: 16px; color: gray;'>
+            Last updated: {RUN_DATE} | © 2025 Anime Oracle
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 def main():
-    # setup_page()
     airing, unreleased = load_predictions()
 
     max_title_length = 30
@@ -206,5 +210,8 @@ def main():
 
     show_airing(airing)
     show_unreleased(unreleased)
+
+    display_footer()
+
 
 main()
