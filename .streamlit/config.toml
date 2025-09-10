@@ -2,8 +2,8 @@
 base="dark"
 primaryColor="#DF36F5"
 backgroundColor = "#29252e"
-textColor = "#FFFFFF"             # default text color
-font = "sans serif"               # options: "sans serif", "serif", "monospace"
+textColor = "#FFFFFF"
+font = "sans serif"
 
 [ui]
 layout = "wide"
