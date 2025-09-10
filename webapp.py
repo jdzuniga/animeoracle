@@ -4,7 +4,24 @@ import streamlit as st
 import pandas as pd
 from src.config import PREDICTIONS_DIR, RUN_DATE, POSTERS_DIR
 
-st.set_page_config(layout='wide')
+
+st.set_page_config(
+    page_title="Anime Oracle",
+    page_icon="🐻",
+    layout="wide"
+)
+
+hide_spinner_style = """
+<style>
+#MainMenu {visibility: hidden;}        /* hides hamburger menu */
+footer {visibility: hidden;}          /* hides footer */
+header {visibility: hidden;}          /* hides Streamlit header */
+[data-testid="stDecoration"] {display: none;} /* hides top-right spinner */
+</style>
+"""
+st.markdown(hide_spinner_style, unsafe_allow_html=True)
+
+
 title = 'Anime Oracle'
 st.markdown(f"<h1 style='font-size: 70px;color:#FFFFFF;text-align:center;'>{title}</h1>", unsafe_allow_html=True)
 
@@ -62,8 +79,13 @@ col1, _, col2 = st.columns([1, 0.1, 1])
 
 def show_airing(airing):
     columns_per_row = 4
+    title = "Top 100 <span style='color:#E259F5;'>Currently Airing</span>"
+
     with col1:
-        st.markdown("<h1 style='color:#63CAF2;text-align:center;'>Top 100 Currently Airing</h1>", unsafe_allow_html=True)
+        st.markdown(
+            f"<h1 style='color:white;text-align:center;'>{title}</h1>",
+            unsafe_allow_html=True
+        )
         (airing_tab,) = st.tabs(["Airing"])
         with airing_tab:
             for i in range(0, len(airing), columns_per_row):
@@ -119,8 +141,13 @@ def show_unreleased(unreleased):
     columns_per_row = 4
     years = sorted(unreleased['year'].unique().tolist())
 
+    title = "Top 100 <span style='color:#E259F5;'>Unreleased</span>"
+
     with col2:
-        st.markdown(f"<h1 style='color:#F5ED5D;text-align:center;'>Top 100 Unreleased Anime</h1>", unsafe_allow_html=True)
+        st.markdown(
+            f"<h1 style='color:white;text-align:center;'>{title}</h1>",
+            unsafe_allow_html=True
+        )
         tabs = st.tabs([str(year) + ' Forecast' for year in years])
         years_tabs = [*tabs]
         for year, tab in zip(years, years_tabs):

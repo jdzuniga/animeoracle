@@ -1,4 +1,17 @@
 [theme]
 base="dark"
-#primaryColor="#63CAF2"
-backgroundColor = "#0D0D0D"
+primaryColor="#DF36F5"
+backgroundColor = "#29252e"
+textColor = "#FFFFFF"             # default text color
+font = "sans serif"               # options: "sans serif", "serif", "monospace"
+
+[ui]
+layout = "wide"
+
+[server]
+headless = true
+port = 8501
+enableCORS = false
+
+[global]
+enableCORS = true
