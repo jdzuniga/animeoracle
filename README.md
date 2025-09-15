@@ -21,13 +21,13 @@ The dashboard and charts answer critical business questions such as:
 2. Do certain release windows (Spring, Summer, Fall, Winter) perform better than others ?
 
 ### Key Insight: Production Trends
-![Genres](charts/genre_trends.png)
+![Genres](https://i.imgur.com/aLHaCn3.png)
 
 Anime production is heavily concentrated in Fantasy and Action, with Comedy and Adventure also remaining strong. While these genres dominate the supply, the market risks oversaturation. Mid-tier genres like Romance and Drama show steady resilience, suggesting opportunities for growth in emotionally-driven storytelling. Projections for 2026 remain incomplete, but early signals suggest continued dominance of Fantasy and Action.
 ### Key Insight: Seasonality in Anime Ratings
-![Seasonality 2024](charts/seasonality_2024.png)
+![Seasonality 2024](https://i.imgur.com/hiGgU0X.png)
 
-![Seasonality 2000-2024](charts/seasonality_2020_2024.png)
+![Seasonality 2000-2024](https://i.imgur.com/lV7VT6X.png)
 
 Anime released in Spring 2024 performed better on average than those in other quarters.
 Studios and platforms shouldn’t over-interpret one strong Spring season as a structural trend. Instead, focus on the titles and genres driving the Q2 2024 spike, since the broader multi-year trend suggests seasonality is usually weak.
