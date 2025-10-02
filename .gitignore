@@ -7,3 +7,5 @@ predictions/
 .idea/
 Dockerfile
 *.pyc
+analytics/
+test.py

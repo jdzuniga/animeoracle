@@ -1,11 +1,9 @@
-from datetime import date
 from pathlib import Path
-
+from datetime import date
 
 RUN_DATE = date.today().strftime("%Y-%m-%d")
-# RUN_DATE = date.fromisoformat('2025-09-07').strftime("%Y-%m-%d")
 
-SINGLE_VALUE_FIELDS = ['mal_id', 'favorites', 'members', 'type', 'source', 'rating', 'trailer', 'status']
+SINGLE_VALUE_FIELDS = ['mal_id', 'favorites', 'members', 'type', 'source', 'rating', 'status']
 MULTI_VALUE_FIELDS = ['studios', 'producers', 'genres', 'themes', 'demographics']
 TARGET_VARIABLE = 'score'
 

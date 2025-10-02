@@ -64,8 +64,8 @@ The website provides an interactive interface for exploring predictions and insi
 - Source: Scraped from [MyAnimeList](https://myanimelist.net) using the **Jikan API**.
 - Title (TF-IDF encoding)
 - Studios, Demographics, Genres, Themes, Producers (multi-label encoding)
-- Type, Source, Rating, Trailer indicator, Sequel indicator, Season (one-hot encoding)
-- Year of release
+- Type, Source, Rating, Trailer indicator, Sequel indicator
+- Year of release, Month of release
 
 ---
 
@@ -99,8 +99,8 @@ Preprocessing
 - Encoding (TF-IDF, One-hot, Multi-label)
 - Imputation for missing values
 - Scaling numerical features
+- Grouping rare categories
 
-Dimensionality Reduction: TruncatedSVD for sparse features
 
 Modeling: LightGBM regressor tuned for root mean squared error (RMSE)
 
@@ -108,8 +108,8 @@ Modeling: LightGBM regressor tuned for root mean squared error (RMSE)
 - Baseline heuristic MAE: ~0.70
 - LightGBM
   - MAE: ~0.40
-  - RMSE: ~0.50
-  - R²: ~0.50
+  - RMSE: ~0.54
+  - R²: ~0.45
 
 ## Future Improvements
 - Implement more robust feature selection to improve model accuracy  

@@ -1,7 +1,8 @@
-# from PIL import Image
+from PIL import Image
 from pathlib import Path
 import streamlit as st
 import pandas as pd
+import argparse
 from src.config import PREDICTIONS_DIR, RUN_DATE, POSTERS_DIR
 
 
@@ -27,12 +28,19 @@ st.markdown(f"<h1 style='font-size: 70px;color:#FFFFFF;text-align:center;'>{titl
 
 tab1, tab2 = st.tabs(["📅 Predictions ", "📊 Statistics"])
 
+
+@st.cache_resource
+def preload_posters(df):
+    posters = {}
+    root = Path(__file__).resolve().parent
+    for row in df.itertuples(index=False):
+        file_name = f"{row.mal_id}.webp"
+        path = root / POSTERS_DIR / RUN_DATE / file_name
+        posters[row.mal_id] = Image.open(path)
+    return posters
+
+
 with tab1:
-    st.caption(
-    """
-    Predictions are shown for the most popular currently airing anime and the most anticipated upcoming anime.
-        """
-    )
     st.caption(
         """
         The accuracy will continue to improve over time. The site is updated monthly, so check back for the latest results!
@@ -74,14 +82,12 @@ with tab1:
 with tab2:
     st.write("Coming soon...")
 
-col1, _, col2 = st.columns([1, 0.1, 1])
 
-
-def show_airing(airing):
+def show_airing(airing, posters, col):
     columns_per_row = 4
     title = "Top 100 <span style='color:#E259F5;'>Currently Airing</span>"
 
-    with col1:
+    with col:
         st.markdown(
             f"<h1 style='color:white;text-align:center;'>{title}</h1>",
             unsafe_allow_html=True
@@ -92,13 +98,13 @@ def show_airing(airing):
                 cols = st.columns(columns_per_row)
                 for idx, row in enumerate(airing.iloc[i:i + columns_per_row].itertuples(index=False)):
                     with cols[idx]:
-                        mal_id = row.mal_id
                         title = row.title
                         score = row.score
                         formatted_score = f"{score:.2f}" if score is not None else "N/A"
                         prediction = f'{row.predicted_score:.2f}'
 
-                        st.image(f'{POSTERS_DIR}/{RUN_DATE}/{mal_id}.webp', caption=title)
+                        poster = posters[row.mal_id]
+                        st.image(poster, caption=title)
 
                         st.markdown(
                             f"""
@@ -134,16 +140,16 @@ def show_airing(airing):
                             unsafe_allow_html=True
                         )
                 st.divider()
-                st.caption("\n\n\n\n")  
+                st.caption("\n\n\n\n")
 
 
-def show_unreleased(unreleased):
+def show_unreleased(unreleased, posters, col):
     columns_per_row = 4
     years = sorted(unreleased['year'].unique().tolist())
 
     title = "Top 100 <span style='color:#E259F5;'>Unreleased</span>"
 
-    with col2:
+    with col:
         st.markdown(
             f"<h1 style='color:white;text-align:center;'>{title}</h1>",
             unsafe_allow_html=True
@@ -158,11 +164,11 @@ def show_unreleased(unreleased):
                     cols = st.columns(columns_per_row)
                     for idx, row in enumerate(year_anime.iloc[i:i + columns_per_row].itertuples(index=False)):
                         with cols[idx]:
-                            mal_id = row.mal_id
                             title = row.title
                             prediction = f'{row.predicted_score:.2f}'
 
-                            st.image(f'{POSTERS_DIR}/{RUN_DATE}/{mal_id}.webp', caption=title)
+                            poster = posters[row.mal_id]
+                            st.image(poster, caption=title)
 
                             st.markdown(
                                 f"""
@@ -196,11 +202,12 @@ def show_unreleased(unreleased):
                             </div>
                             """,
                             unsafe_allow_html=True
-                        )
+                            )
                     st.divider()
-                    st.caption("\n\n\n\n")  
+                    st.caption("\n\n\n\n")
 
 
+@st.cache_data
 def shorten_text(series, length):
     return series.apply(lambda text: text if len(text) < length else text[:length] + '...')
 
@@ -216,6 +223,7 @@ def load_predictions():
 
     return airing, unreleased
 
+
 def display_footer():
     st.markdown(
         f"""
@@ -229,15 +237,152 @@ def display_footer():
 
 
 def main():
-    airing, unreleased = load_predictions()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--date",
+        type=str,
+        default=None,
+        help="Date format: YYYY-MM-DD"
+    )
+    args = parser.parse_args()
+    if args.date:
+        global RUN_DATE
+        RUN_DATE = args.date
 
     max_title_length = 30
+    airing, unreleased = load_predictions()
+
     airing['title'] = shorten_text(airing['title'], max_title_length)
     unreleased['title'] = shorten_text(unreleased['title'], max_title_length)
 
-    show_airing(airing)
-    show_unreleased(unreleased)
+    airing_posters = preload_posters(airing)
+    unreleased_posters = preload_posters(unreleased)
 
+    columns_per_block = 4  # how many per side per row
+    max_rows = max(len(airing), len(unreleased)) // columns_per_block + 1
+
+
+    col1, _, col2 = st.columns([1, 0.1, 1])
+    airing_title = "Top 100 <span style='color:#E259F5;'>Currently Airing</span>"
+    unreleased_title = "Top 100 <span style='color:#E259F5;'>Unreleased</span>"
+
+    with col1:
+        st.markdown(
+            f"<h1 style='color:white;text-align:center;'>{airing_title}</h1>",
+            unsafe_allow_html=True
+        )
+        (airing_tab,) = st.tabs(["Airing"])
+
+    with col2:
+        st.markdown(
+            f"<h1 style='color:white;text-align:center;'>{unreleased_title}</h1>",
+            unsafe_allow_html=True
+        )
+        years = sorted(unreleased['year'].unique().tolist())
+        tabs = st.tabs([str(year) + ' Forecast' for year in years])
+        years_tabs = [*tabs]
+
+
+    for i in range(max_rows):
+        with col1:
+            with airing_tab:
+                block = airing.iloc[i * columns_per_block:(i + 1) * columns_per_block]
+                cols = st.columns(columns_per_block)
+                for idx, row in enumerate(block.itertuples(index=False)):
+                    with cols[idx]:
+
+                        score = row.score
+                        formatted_score = f"{score:.2f}" if not pd.isna(score) else "N/A"
+                        prediction = f"{row.predicted_score:.2f}"
+
+                        poster = airing_posters[row.mal_id]
+                        st.image(poster, caption=row.title)
+                        st.markdown(
+                            f"""
+                            <div style='text-align: center;'>
+                                <span style='
+                                    background-color:#9ABF15;
+                                    color:white;
+                                    padding:2px 8px 2px 8px;
+                                    border-radius:16px;
+                                    font-size:16px;
+                                    margin-left:8px;
+                                    margin-bottom: 8px;
+                                    display:inline-block;
+                                '>{formatted_score}⭐</span>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                        st.markdown(
+                            f"""
+                            <div style='text-align: center;'>
+                                <span style='
+                                    background-color:#5368A6;
+                                    color:white;
+                                    padding:2px 8px 2px 8px;
+                                    border-radius:16px;
+                                    font-size:16px;
+                                    margin-left:8px;
+                                    display:inline-block;
+                                '>{prediction}⭐</span>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                if i < max_rows - 2 and not block.empty:
+                    st.divider()
+                    st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
+
+
+        with col2:
+            for year, tab in zip(years, years_tabs):
+                with tab:
+                    year_anime = unreleased[unreleased['year'] == year]
+                    block = year_anime.iloc[i * columns_per_block:(i + 1) * columns_per_block]
+                    cols = st.columns(columns_per_block)
+                    for idx, row in enumerate(block.itertuples(index=False)):
+                        with cols[idx]:
+                            poster = unreleased_posters[row.mal_id]
+                            st.image(poster, caption=row.title)
+
+                            prediction = f"{row.predicted_score:.2f}"
+                            st.markdown(
+                                f"""
+                                <div style='text-align: center;'>
+                                    <span style='
+                                        background-color:#5368A6;
+                                        color:white;
+                                        padding:2px 8px 2px 8px;
+                                        border-radius:16px;
+                                        font-size:16px;
+                                        margin-left:8px;
+                                        margin-bottom: 8px;
+                                        display:inline-block;
+                                    '>{prediction}⭐</span>
+                                </div>
+                                """,
+                                unsafe_allow_html=True
+                            )
+                            st.markdown(
+                                f"""
+                                <div style='text-align: center;'>
+                                    <span style='
+                                        background-color:#00000;
+                                        color:black;
+                                        padding:2px 8px 2px 8px;
+                                        border-radius:16px;
+                                        font-size:16px;
+                                        margin-left:8px;
+                                        display:inline-block;
+                                    '>&nbsp;</span>
+                                </div>
+                                """,
+                                unsafe_allow_html=True
+                            )
+                    if i < max_rows - 2 and not block.empty:
+                        st.divider()
+                        st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
     display_footer()
 
 
