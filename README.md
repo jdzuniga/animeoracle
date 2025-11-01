@@ -21,13 +21,13 @@ The dashboard and charts answer critical business questions such as:
 2. Do certain release windows (Spring, Summer, Fall, Winter) perform better than others ?
 
 ### Key Insight: Production Trends
-![Genres](https://i.imgur.com/aLHaCn3.png)
+![Genres](assets/diagram.png)
 
 Anime production is heavily concentrated in Fantasy and Action, with Comedy and Adventure also remaining strong. While these genres dominate the supply, the market risks oversaturation. Mid-tier genres like Romance and Drama show steady resilience, suggesting opportunities for growth in emotionally-driven storytelling. Projections for 2026 remain incomplete, but early signals suggest continued dominance of Fantasy and Action.
 ### Key Insight: Seasonality in Anime Ratings
-![Seasonality 2024](https://i.imgur.com/hiGgU0X.png)
+![Seasonality 2024](assets/seasonality_2024.png)
 
-![Seasonality 2000-2024](https://i.imgur.com/lV7VT6X.png)
+![Seasonality 2000-2024](assets/seasonality_2020-2024.png)
 
 Anime released in Spring 2024 performed better on average than those in other quarters.
 Studios and platforms shouldn’t over-interpret one strong Spring season as a structural trend. Instead, focus on the titles and genres driving the Q2 2024 spike, since the broader multi-year trend suggests seasonality is usually weak.
@@ -39,12 +39,12 @@ Studios and platforms shouldn’t over-interpret one strong Spring season as a s
 
 The website provides an interactive interface for exploring predictions and insights:
 
-**Top 100 Currently Airing Anime**
+**Top 50 Currently Airing Anime**
 * Predicted score (subject to change until series completion).
 * Current ratings may fluctuate as more viewers watch and rate the show
 * Helps viewers and platforms track which titles are gaining the most traction.
 
-**Top 100 Unreleased Anime**
+**Top 50 Unreleased Anime**
 * Predicts ratings for upcoming shows before they air. 
 * Provides studios, streaming platforms, and advertisers with an early indicator of which titles are most likely to generate hype and drive engagement.
 
@@ -69,31 +69,6 @@ The website provides an interactive interface for exploring predictions and insi
 
 ---
 
-## Project Structure
-```
-├── src/               # Source code
-├── main.py            # Entrypoint
-├── webapp.py          # Streamlit app
-├── requirements.txt   # Dependencies
-└── README.md          # Project description
-```
-
-## Running the App
-
-```bash
-# Clone the repo
-git clone https://github.com/jdzuniga/animeoracle.git
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the whole pipeline
-python main.py
-
-# Run the Streamlit app
-streamlit run webapp.py
-```
-
 ## Model & Prediction Pipeline
 Preprocessing
 - Encoding (TF-IDF, One-hot, Multi-label)
@@ -116,5 +91,33 @@ Modeling: LightGBM regressor tuned for root mean squared error (RMSE)
 - Ensemble models for better performance  
 - Improve offline testing with larger validation windows and stricter evaluation  
 - Add weekly batch training and prediction for near real-time updates
+
+## Project Structure
+```
+├── src/               # Source code
+├── main.py            # Entrypoint
+├── webapp.py          # Streamlit app
+├── requirements.txt   # Dependencies
+└── README.md          # Project description
+```
+
+## Running the App
+```bash
+# Clone the repo
+git clone https://github.com/jdzuniga/animeoracle.git
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the whole pipeline
+python main.py
+
+# Run the Streamlit app
+streamlit run webapp.py
+```
+
+## Preview
+![Demo](assets/demo.png)
+
 
 

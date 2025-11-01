@@ -2,13 +2,15 @@ from PIL import Image
 from pathlib import Path
 import streamlit as st
 import pandas as pd
-import argparse
-from src.config import PREDICTIONS_DIR, RUN_DATE, POSTERS_DIR
+from src.config import PREDICTIONS_DIR, POSTERS_DIR
+from src.utils import get_latest_dated_folder
 
+
+root = Path(__file__).resolve().parent
+RUN_DATE = get_latest_dated_folder(root / PREDICTIONS_DIR)
 
 st.set_page_config(
     page_title="Anime Oracle",
-    page_icon="🐻",
     layout="wide"
 )
 
@@ -26,8 +28,6 @@ st.markdown(hide_spinner_style, unsafe_allow_html=True)
 title = 'Anime Oracle'
 st.markdown(f"<h1 style='font-size: 70px;color:#FFFFFF;text-align:center;'>{title}</h1>", unsafe_allow_html=True)
 
-tab1, tab2 = st.tabs(["📅 Predictions ", "📊 Statistics"])
-
 
 @st.cache_resource
 def preload_posters(df):
@@ -37,61 +37,54 @@ def preload_posters(df):
         file_name = f"{row.mal_id}.webp"
         path = root / POSTERS_DIR / RUN_DATE / file_name
         posters[row.mal_id] = Image.open(path)
+        posters[row.mal_id] = posters[row.mal_id].resize((300, 425))
     return posters
 
 
-with tab1:
-    st.caption(
-        """
-        The accuracy will continue to improve over time. The site is updated monthly, so check back for the latest results!
-        """
-    )
-    st.markdown(
-        f"""
-        
-        <div style='text-align: left;'><span>Current Score: </span>
-            <span style='
-                background-color:#9ABF15;
-                border-radius:16px;
-                margin-left:8px;
-                min-width:40px;
-                min-height:20px;
-                display:inline-block;
-            '></span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.markdown(
-        f"""
-        
-        <div style='text-align: left;'><span>Prediction Score: </span>
-            <span style='
-                background-color:#5368A6;
-                margin-left:8px;
-                border-radius:16px;
-                min-width:40px;
-                min-height:20px;
-                display:inline-block;
-            '></span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+st.caption(
+    """
+    Predicting scores for the top currently airing and upcoming anime !
+    """
+)
+st.markdown(
+    f"""
+    
+    <div style='text-align: left;'><span>Current Score: </span>
+        <span style='
+            background-color:#9ABF15;
+            border-radius:16px;
+            margin-left:8px;
+            min-width:40px;
+            min-height:20px;
+            display:inline-block;
+        '></span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.markdown(
+    f"""
+    
+    <div style='text-align: left;'><span>Prediction Score: </span>
+        <span style='
+            background-color:#5368A6;
+            margin-left:8px;
+            border-radius:16px;
+            min-width:40px;
+            min-height:20px;
+            display:inline-block;
+        '></span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-with tab2:
-    st.write("Coming soon...")
 
 
 def show_airing(airing, posters, col):
     columns_per_row = 4
-    title = "Top 100 <span style='color:#E259F5;'>Currently Airing</span>"
 
     with col:
-        st.markdown(
-            f"<h1 style='color:white;text-align:center;'>{title}</h1>",
-            unsafe_allow_html=True
-        )
         (airing_tab,) = st.tabs(["Airing"])
         with airing_tab:
             for i in range(0, len(airing), columns_per_row):
@@ -147,13 +140,7 @@ def show_unreleased(unreleased, posters, col):
     columns_per_row = 4
     years = sorted(unreleased['year'].unique().tolist())
 
-    title = "Top 100 <span style='color:#E259F5;'>Unreleased</span>"
-
     with col:
-        st.markdown(
-            f"<h1 style='color:white;text-align:center;'>{title}</h1>",
-            unsafe_allow_html=True
-        )
         tabs = st.tabs([str(year) + ' Forecast' for year in years])
         years_tabs = [*tabs]
         for year, tab in zip(years, years_tabs):
@@ -229,7 +216,7 @@ def display_footer():
         f"""
         <hr>
         <p style='text-align: center; font-size: 16px; color: gray;'>
-            Last updated: {RUN_DATE} | © 2025 Anime Oracle
+            Last updated: {RUN_DATE} | Anime Oracle
         </p>
         """,
         unsafe_allow_html=True
@@ -237,19 +224,7 @@ def display_footer():
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--date",
-        type=str,
-        default=None,
-        help="Date format: YYYY-MM-DD"
-    )
-    args = parser.parse_args()
-    if args.date:
-        global RUN_DATE
-        RUN_DATE = args.date
-
-    max_title_length = 30
+    max_title_length = 25
     airing, unreleased = load_predictions()
 
     airing['title'] = shorten_text(airing['title'], max_title_length)
@@ -258,13 +233,13 @@ def main():
     airing_posters = preload_posters(airing)
     unreleased_posters = preload_posters(unreleased)
 
-    columns_per_block = 4  # how many per side per row
+    columns_per_block = 5
     max_rows = max(len(airing), len(unreleased)) // columns_per_block + 1
 
 
     col1, _, col2 = st.columns([1, 0.1, 1])
-    airing_title = "Top 100 <span style='color:#E259F5;'>Currently Airing</span>"
-    unreleased_title = "Top 100 <span style='color:#E259F5;'>Unreleased</span>"
+    airing_title = "Top 50 <span style='color:#E259F5;'>Currently Airing</span>"
+    unreleased_title = "Top 50 <span style='color:#E259F5;'>Unreleased</span>"
 
     with col1:
         st.markdown(

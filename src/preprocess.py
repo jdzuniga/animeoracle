@@ -273,6 +273,26 @@ class AddIsSequel(BaseEstimator, TransformerMixin):
         return np.array(['is_sequel'])
     
 
+class CyclicalFeatures(BaseEstimator,  TransformerMixin):
+    """
+    Transform a single column (month) into its sine and cosine representation.
+    Works with pandas or NumPy arrays.
+    """
+    def __init__(self, period=12):
+        self.period = period
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        # x = np.array(X.to_list())
+        X = X.copy()
+        sin = X.apply(lambda x: np.sin(2 * np.pi * x / self.period))
+        cos = X.apply(lambda x: np.cos(2 * np.pi * x / self.period))
+        # sin = np.sin(2 * np.pi * X / self.period)
+        # cos = np.cos(2 * np.pi * X / self.period)
+        return pd.DataFrame({"month_sin": sin, "month_cos": cos})
+
 title_pipeline = Pipeline([
     ('clean_text', CleanText()),
     ('tfidf', Tfidf(max_features=10))
@@ -288,6 +308,10 @@ single_label_pipeline = Pipeline([
     ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=True)),
 ])
 
+month_pipeline = Pipeline([
+    ('cyclical', CyclicalFeatures(period=12))
+])
+
 multi_label_pipeline = Pipeline([
     ('mlb_imputer', MultiLabelImputer()),
     ('mlb', MultiLabelBinarizerTransformer()),
@@ -299,7 +323,8 @@ preprocessor = ColumnTransformer(transformers=[
     ('type', single_label_pipeline, 'type'),
     ('source', single_label_pipeline, 'source'),
     ('rating', single_label_pipeline, 'rating'),
-    ('passthrough', 'passthrough', ['trailer', 'year', 'month']),
+    ("month", month_pipeline, "month"),
+    ('passthrough', 'passthrough', ['trailer', 'year']),
     ('studios_label', multi_label_pipeline, 'studios'),
     ('producers_label', multi_label_pipeline, 'producers'),
     ('genres_label', multi_label_pipeline, 'genres'),

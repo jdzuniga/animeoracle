@@ -8,10 +8,11 @@ PREDICTIONS_DIR = config.PREDICTIONS_DIR
 TARGET_VARIABLE = config.TARGET_VARIABLE
 
 
-def create_predictions_directory():
+def create_directory():
     """ Create directory for saving predictions if it doesn't exist. """
     root = Path(__file__).resolve().parent.parent
-    (root / PREDICTIONS_DIR / config.RUN_DATE).mkdir(parents=True, exist_ok=True)
+    (root / PREDICTIONS_DIR).mkdir(exist_ok=True)
+    (root / PREDICTIONS_DIR / config.RUN_DATE).mkdir(exist_ok=True)
 
 
 def load_model():
@@ -74,15 +75,15 @@ def keep_most_popular_anime(df, members):
 
 def run():
     """ Main function to execute the prediction pipeline. """
-    create_predictions_directory()
+    create_directory()
 
     model = load_model()
 
     airing_predictions = predict_airing(model)
     unreleased_predictions = predict_unreleased(model)
 
-    airing_predictions = keep_most_popular_anime(airing_predictions, 100)
-    unreleased_predictions = keep_most_popular_anime(unreleased_predictions, 100)
+    airing_predictions = keep_most_popular_anime(airing_predictions, 50)
+    unreleased_predictions = keep_most_popular_anime(unreleased_predictions, 50)
 
     save_airing_predictions(airing_predictions)
     save_airing_unreleased(unreleased_predictions)

@@ -6,3 +6,4 @@ requests==2.32.4
 streamlit==1.47.1
 lightgbm==4.6.0
 joblib==1.5.1
+tqdm==4.67.1

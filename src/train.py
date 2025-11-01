@@ -72,9 +72,26 @@ def build_pipeline(params=None):
         Args:
             params (dict, optional): Hyperparameters for the LightGBM regressor. Defaults to None.
     """
-    model = lgb.LGBMRegressor(objective='regression_l2', n_jobs=-1)
+    default_hyperparams = {
+        "subsample": 0.5,
+        "num_leaves": 255,
+        "n_estimators": 1500,
+        "min_split_gain": 0.0,
+        "min_child_samples": 5,
+        "max_depth": 40,
+        "max_bin": 63,
+        "learning_rate": 0.01,
+        "lambda_l2": 1.0,
+        "lambda_l1": 1.0,
+        "feature_fraction": 0.5,
+        "colsample_bytree": 0.5,
+        "boosting_type": "gbdt",
+        "bagging_freq": 5,
+        "bagging_fraction": 0.8
+    }
+    model = lgb.LGBMRegressor(objective='regression_l2', n_jobs=-1, **default_hyperparams)
     if params:
-        model = lgb.LGBMRegressor(**params, objective='regression_l2', n_jobs=-1)
+        model = lgb.LGBMRegressor(objective='regression_l2', n_jobs=-1, **params)
     return Pipeline([
         ('preprocessor', preprocess.preprocessor),
         ('lgb', model)
@@ -105,7 +122,7 @@ def get_param_grid():
     }
     return param_dist
 
-def run_grid_search(pipeline, param_grid, X, y, training_window=5):
+def run_grid_search(pipeline, param_grid, X, y, cv_training_window=5, cv_folds=3):
     """
     Perform hyperparameter tuning using RandomizedSearchCV with rolling window cross-validation.
     Args:
@@ -113,7 +130,7 @@ def run_grid_search(pipeline, param_grid, X, y, training_window=5):
         param_grid (dict): Hyperparameter grid for RandomizedSearchCV.
         X (pd.DataFrame): Feature DataFrame.
         y (pd.Series): Target variable Series.
-        training_window (int): Number of years to include in the training set for each split.
+        cv_training_window (int): Number of years to include in the training set for each split.
     Returns:
         RandomizedSearchCV: The fitted RandomizedSearchCV object.   
     """
@@ -127,9 +144,9 @@ def run_grid_search(pipeline, param_grid, X, y, training_window=5):
         estimator=pipeline,
         param_distributions=param_grid,
         refit="RMSE",
-        n_iter=200,
+        n_iter=300,
         scoring=scoring,
-        cv=RollingWindowCV(train_size=training_window, n_splits=3),
+        cv=RollingWindowCV(train_size=cv_training_window, n_splits=cv_folds),
         verbose=2,
         n_jobs=-1
     )
@@ -137,9 +154,10 @@ def run_grid_search(pipeline, param_grid, X, y, training_window=5):
     return grid_search
 
 
-def create_model_directory():
+def create_directory():
     """ Create directory for saving models and results if it doesn't exist. """
     root = Path(__file__).resolve().parent.parent
+    (root / MODELS_DIR).mkdir(exist_ok=True)
     (root / MODELS_DIR / config.RUN_DATE).mkdir(parents=True, exist_ok=True)
 
 
@@ -166,10 +184,9 @@ def save_model(model):
     joblib.dump(model, file_path)
 
 
-def evaluate_performance(data, params):
+def evaluate_performance(data, params, training_window=5):
     """ Evaluate model performance on a hold-out test set. """
     current_year = datetime.today().year
-    training_window = 5
     train = data[data['year'].between(current_year - training_window - 1, current_year - 2)]
     X_train = train.drop(TARGET_VARIABLE, axis=1)
     y_train = train[TARGET_VARIABLE]
@@ -196,35 +213,76 @@ def train_final_model(pipeline, data, training_window=5):
 
     X_train = train.drop(TARGET_VARIABLE, axis=1)
     y_train = train[TARGET_VARIABLE]
-    return pipeline.fit(X_train, y_train)
+    model = pipeline.fit(X_train, y_train)
+    print("model trained.")
+
+    return model
 
 
-def run():
+def find_best_training_window(X, y, folds=3):
+    training_windows = [i for i in range(16, 21)]
+    best_window = None
+    lowest_rmse = float("inf")
+    best_hyperparams = None
+    results = {}
+
+    param_grid = get_param_grid()
+    for window in training_windows:
+        cv_pipeline = build_pipeline()
+        grid_search = run_grid_search(cv_pipeline,
+                                      param_grid,
+                                      X, y,
+                                      cv_training_window=window,
+                                      cv_folds=folds)
+        rmse = -grid_search.best_score_
+        results[window] = round(float(rmse), 4)
+
+        # Track best window
+        if rmse < lowest_rmse:
+            lowest_rmse = rmse
+            best_window = window
+            best_hyperparams = grid_search.best_params_
+
+    return results, best_window, best_hyperparams
+
+
+def run(param_search=False, window_search=False):
     """ Main function to execute the training pipeline. """
-    create_model_directory()
+    create_directory()
 
     data = load_data()
 
     X = data.drop(TARGET_VARIABLE, axis=1)
     y = data[TARGET_VARIABLE]
+    best_window = 10
 
-    cv_pipeline = build_pipeline()
-    param_grid = get_param_grid()
+    if window_search:
+        results, best_window, best_hyperparams = find_best_training_window(X, y, folds=3)
+        print(results)
+        print(f"Best window = {best_window}")
 
-    training_window = 5
-    grid_search = run_grid_search(cv_pipeline, param_grid, X, y, training_window=training_window)
+    elif param_search:
+        folds = 3
+        cv_pipeline = build_pipeline()
+        param_grid = get_param_grid()
+        grid_search = run_grid_search(cv_pipeline,
+                                      param_grid,
+                                      X, y,
+                                      cv_training_window=best_window,
+                                      cv_folds=folds)
 
-    pipeline_params = grid_search.best_params_
-    model_params = {k.split("__")[1]: v for k, v in pipeline_params.items()}
-    metrics = evaluate_performance(data, model_params)
+        best_hyperparams = grid_search.best_params_
 
-    save_hyperparams(model_params)
-    save_performance(metrics)
+        model_params = {k.split("__")[1]: v for k, v in best_hyperparams.items()}
+        metrics = evaluate_performance(data, model_params, training_window=best_window)
 
-    final_pipeline = build_pipeline(model_params)
-    final_model = train_final_model(final_pipeline, data, training_window=training_window)
+        save_hyperparams(model_params)
+        save_performance(metrics)
+        print(metrics)
+
+    final_pipeline = build_pipeline()
+    final_model = train_final_model(final_pipeline, data, training_window=best_window)
     save_model(final_model)
-    print(metrics)
 
 
 if __name__ == '__main__':
