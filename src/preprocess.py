@@ -107,7 +107,12 @@ class Tfidf(BaseEstimator, TransformerMixin):
             max_features (int): Maximum number of features to extract. Default is 100.
         """
         self.max_features = max_features
-        self.vectorizer = TfidfVectorizer(max_features=self.max_features, ngram_range=(1, 2), stop_words='english')
+        self.vectorizer = TfidfVectorizer(
+            max_features=self.max_features,
+            min_df=2,
+            max_df=0.9,
+            ngram_range=(1, 2),
+            stop_words='english')
 
     def fit(self, X, y=None):
         """
@@ -285,17 +290,14 @@ class CyclicalFeatures(BaseEstimator,  TransformerMixin):
         return self
 
     def transform(self, X):
-        # x = np.array(X.to_list())
         X = X.copy()
         sin = X.apply(lambda x: np.sin(2 * np.pi * x / self.period))
         cos = X.apply(lambda x: np.cos(2 * np.pi * x / self.period))
-        # sin = np.sin(2 * np.pi * X / self.period)
-        # cos = np.cos(2 * np.pi * X / self.period)
         return pd.DataFrame({"month_sin": sin, "month_cos": cos})
 
 title_pipeline = Pipeline([
     ('clean_text', CleanText()),
-    ('tfidf', Tfidf(max_features=10))
+    ('tfidf', Tfidf(max_features=100))
 ])
 
 is_sequel_pipeline = Pipeline([
@@ -314,7 +316,7 @@ month_pipeline = Pipeline([
 
 multi_label_pipeline = Pipeline([
     ('mlb_imputer', MultiLabelImputer()),
-    ('mlb', MultiLabelBinarizerTransformer()),
+    ('mlb', MultiLabelBinarizerTransformer(min_pct=0.01)),
 ])
 
 preprocessor = ColumnTransformer(transformers=[

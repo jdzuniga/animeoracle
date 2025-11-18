@@ -3,18 +3,6 @@ import pandas as pd
 from src import config
 
 
-def transform_trailer_format(data: pd.DataFrame) -> pd.DataFrame:
-    """ Transform the 'trailer' column to a boolean indicating presence of a trailer.
-    Args:
-        data (pd.DataFrame): DataFrame containing the 'trailer' column.
-
-    Returns:
-        pd.DataFrame: The transformed DataFrame with the 'trailer' column updated.
-    """
-    data['trailer'] = data['trailer'].notna()
-    return data
-
-
 def remove_duplicates(data: pd.DataFrame) -> pd.DataFrame:
     """ Remove duplicate entries from the anime DataFrame.
     Args:
@@ -92,6 +80,7 @@ def load_data() -> pd.DataFrame:
     root = Path(__file__).resolve().parent.parent
     file_path = root / config.DATA_DIR / config.RUN_DATE / f'anime_raw.parquet'
     anime = pd.read_parquet(file_path)
+    anime = anime.astype(config.dtypes)
     return anime
 
 
@@ -113,7 +102,6 @@ def run() -> None:
     """ Main function to execute the data cleaning pipeline. """
     data = load_data()
     data.set_index('mal_id', inplace=True)
-    data = transform_trailer_format(data)
     data = remove_duplicates(data)
     data = remove_unsafe_ratings(data)
     data = remove_low_members_anime(data, quantile=0.1)

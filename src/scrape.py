@@ -93,9 +93,9 @@ def scrape_anime(from_year: int, to_year: int) -> list[dict]:
                         title_english = anime.get('title_english')
                         anime_dict['title'] = title_english if title_english else anime.get('title')
 
-                        anime_dict['datetime'] = anime.get('aired', {}).get('from', np.nan)
+                        anime_dict['datetime'] = anime.get('aired').get('from')
 
-                        anime_dict['trailer'] = anime.get('trailer', {}).get('url', np.nan)
+                        anime_dict['trailer'] = anime.get('trailer').get('embed_url')
 
                         anime_dict['image_url'] = anime.get('images').get('webp').get('large_image_url')
 
