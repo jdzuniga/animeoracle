@@ -35,7 +35,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image
-        run: docker buildx build --platform linux/amd64 -t ghcr.io/jdzuniga/anime-oracle:latest .
+        run: docker buildx build --platform linux/amd64 --load -t ghcr.io/jdzuniga/anime-oracle:latest .
 
       - name: Push Docker image
         run: docker push ghcr.io/jdzuniga/anime-oracle:latest
