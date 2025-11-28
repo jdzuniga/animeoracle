@@ -24,22 +24,21 @@ jobs:
       - name: Run pipeline
         run: python main.py
 
-      - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          service_account_key: ${{ secrets.GCLOUD_SERVICE_KEY }}
-          project_id: anime-oracle-479313
-
-      - name: Configure Docker auth for Artifact Registry
-        run: gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev --quiet
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.GCLOUD_SERVICE_KEY }}"
+
+      - name: Configure Docker for GCP Artifact Registry
+        run: gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev
 
       - name: Build and push Docker image to Artifact Registry
         run: |
           docker buildx build \
             --platform linux/amd64 \
-            -t northamerica-northeast1-docker.pkg.dev/anime-oracle-479313/my-repo/anime-oracle:latest \
-            --push \
-            .
+            -t northamerica-northeast1-docker.pkg.dev/anime-oracle-479313/my-repo/anime:v1.2.1 \
+            --push .
+
