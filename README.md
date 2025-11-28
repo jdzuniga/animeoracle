@@ -34,8 +34,8 @@ Studios and platforms shouldn’t over-interpret one strong Spring season as a s
 
 ---
 ## Website
-[![Streamlit](https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white)](https://animeoracle.azurewebsites.net/)
-[![Streamlit App](https://img.shields.io/badge/Website-Live-green?style=for-the-badge&logo=streamlit)](https://animeoracle.azurewebsites.net/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white)](https://anime-oracle-96395747802.northamerica-northeast1.run.app/)
+[![Streamlit App](https://img.shields.io/badge/Website-Live-green?style=for-the-badge&logo=streamlit)](https://anime-oracle-96395747802.northamerica-northeast1.run.app/)
 
 The website provides an interactive interface for exploring predictions and insights:
 
