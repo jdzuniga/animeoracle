@@ -53,8 +53,9 @@ jobs:
       # 9. Deploy to Cloud Run (redeploy anime-oracle with latest)
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy anime-oracle \
+          gcloud run deploy animeoracle \
             --image northamerica-northeast1-docker.pkg.dev/anime-oracle-479313/my-repo/anime:latest \
             --platform managed \
-            --region northamerica-northeast1 \
+            --region us-central1 \
             --allow-unauthenticated
+
