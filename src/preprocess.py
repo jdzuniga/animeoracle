@@ -235,7 +235,7 @@ class MultiLabelImputer(BaseEstimator, TransformerMixin):
 
 
     
-class AddIsSequel(BaseEstimator, TransformerMixin):
+class IsSequel(BaseEstimator, TransformerMixin):
     """
     Add a binary feature indicating whether the title suggests it is a sequel, remake, or part of a series.
     """
@@ -301,7 +301,7 @@ title_pipeline = Pipeline([
 ])
 
 is_sequel_pipeline = Pipeline([
-    ('sequel_feature', AddIsSequel())
+    ('sequel_feature', IsSequel())
 ])
 
 single_label_pipeline = Pipeline([
