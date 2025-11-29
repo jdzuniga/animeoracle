@@ -5,5 +5,7 @@ pyarrow==19.0.0
 requests==2.32.4
 streamlit==1.47.1
 lightgbm==4.6.0
+xgboost==3.0.3
+catboost==1.2.8
 joblib==1.5.1
 tqdm==4.67.1

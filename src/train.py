@@ -2,7 +2,9 @@ from pathlib import Path
 from datetime import datetime
 import pandas as pd
 import numpy as np
-import lightgbm as lgb
+from lightgbm import LGBMRegressor
+from xgboost import XGBRegressor
+from catboost import CatBoostRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import make_scorer, mean_absolute_error, root_mean_squared_error, r2_score
@@ -23,13 +25,13 @@ class RollingWindowCV(BaseCrossValidator):
     """
     Custom cross-validator for rolling window time series split based on years.
     Parameters:
-        train_size (int): Number of years to include in the training set.
+        window_size (int): Number of years to include in the training set.
         n_splits (int): Number of splits to create.
     Yields:
         train indices, validation indices for each split.
     """
-    def __init__(self, train_size=5, n_splits=3):
-        self.train_size = train_size
+    def __init__(self, window_size=2, n_splits=3):
+        self.window_size = window_size
         self.n_splits = n_splits
 
     def get_n_splits(self, X=None, y=None, groups=None):
@@ -37,12 +39,12 @@ class RollingWindowCV(BaseCrossValidator):
 
     def split(self, X, y=None, groups=None):
         current_year = datetime.today().year
-        years = np.sort([year for year in range(current_year - 2 - self.train_size - self.n_splits,
+        years = np.sort([year for year in range(current_year - self.window_size - self.n_splits - 1,
                                                 current_year - 1)])
 
         for i in range(self.n_splits):
             train_start = i
-            train_end = i + self.train_size
+            train_end = i + self.window_size
             valid_year = years[train_end]
 
             train_mask = X['year'].isin(years[train_start:train_end])
@@ -50,6 +52,8 @@ class RollingWindowCV(BaseCrossValidator):
 
             train_idx = np.where(train_mask)[0]
             valid_idx = np.where(valid_mask)[0]
+            
+            # print(f'CV {i+1}: {years[train_start:train_end]} -> {valid_year}')
 
             yield train_idx, valid_idx
 
@@ -66,92 +70,119 @@ def load_data():
     return anime
 
 
-def build_pipeline(params=None):
-    """
-        Build a machine learning pipeline with preprocessing and LightGBM regressor.
-        Args:
-            params (dict, optional): Hyperparameters for the LightGBM regressor. Defaults to None.
-    """
-    default_hyperparams = {
-        "subsample": 0.5,
-        "num_leaves": 255,
-        "n_estimators": 1500,
-        "min_split_gain": 0.0,
-        "min_child_samples": 5,
-        "max_depth": 40,
-        "max_bin": 63,
-        "learning_rate": 0.01,
-        "lambda_l2": 1.0,
-        "lambda_l1": 1.0,
-        "feature_fraction": 0.5,
-        "colsample_bytree": 0.5,
-        "boosting_type": "gbdt",
-        "bagging_freq": 5,
-        "bagging_fraction": 0.8
-    }
-    model = lgb.LGBMRegressor(objective='regression_l2', n_jobs=-1, **default_hyperparams)
-    if params:
-        model = lgb.LGBMRegressor(objective='regression_l2', n_jobs=-1, **params)
+def build_pipeline(model):
     return Pipeline([
         ('preprocessor', preprocess.preprocessor),
-        ('lgb', model)
+        ('model', model)
     ])
 
-def get_param_grid():
-    """
-        Define the hyperparameter grid for RandomizedSearchCV.
-        Returns:
-            dict: Hyperparameter grid.
-    """
-    param_dist = {
-        "lgb__n_estimators": [100, 200, 500, 750, 1000, 1500],
-        "lgb__learning_rate": [0.01, 0.05, 0.1],
-        "lgb__num_leaves": [15, 31, 63, 127, 255],
-        "lgb__max_depth": [-1, 5, 10, 20, 40],
-        "lgb__min_child_samples": [5, 10, 20, 50, 100],
-        "lgb__subsample": [0.5, 0.6, 0.8, 1.0],
-        "lgb__colsample_bytree": [0.5, 0.6, 0.8, 1.0],
-        "lgb__feature_fraction": [0.5, 0.7, 0.8, 1.0],
-        "lgb__bagging_fraction": [0.5, 0.7, 0.8, 1.0],
-        "lgb__lambda_l1": [0.0, 0.1, 0.5, 1.0],
-        "lgb__lambda_l2": [0.0, 0.1, 0.5, 1.0],
-        "lgb__min_split_gain": [0.0, 0.01, 0.05],
-        "lgb__max_bin": [63, 127, 255],
-        "lgb__bagging_freq": [0, 1, 5],
-        "lgb__boosting_type": ["gbdt", "dart"]
-    }
-    return param_dist
 
-def run_grid_search(pipeline, param_grid, X, y, cv_training_window=5, cv_folds=3):
-    """
-    Perform hyperparameter tuning using RandomizedSearchCV with rolling window cross-validation.
-    Args:
-        pipeline (Pipeline): The machine learning pipeline.
-        param_grid (dict): Hyperparameter grid for RandomizedSearchCV.
-        X (pd.DataFrame): Feature DataFrame.
-        y (pd.Series): Target variable Series.
-        cv_training_window (int): Number of years to include in the training set for each split.
-    Returns:
-        RandomizedSearchCV: The fitted RandomizedSearchCV object.   
-    """
+def get_models():
+    return {
+        "lgb": LGBMRegressor(
+            subsample=0.7,
+            reg_lambda=0.5,
+            reg_alpha=0.3,
+            num_leaves=255,
+            n_estimators=400,
+            min_child_samples=5,
+            max_depth=6,
+            learning_rate=0.03,
+            colsample_bytree=0.7,
+            verbose=-1
+        ),
+        "xgb": XGBRegressor(
+            subsample=0.9,
+            reg_lambda=0.3,
+            reg_alpha=1.0,
+            n_estimators=1200,
+            min_child_weight=4,
+            max_depth=5,
+            learning_rate=0.01,
+            gamma=0,
+            colsample_bytree=0.6
+        ),
+        "cat": CatBoostRegressor(
+            random_strength=5,
+            learning_rate=0.03,
+            l2_leaf_reg=1,
+            iterations=500,
+            depth=8,
+            bagging_temperature=0.25,
+            verbose=False
+        )
+    }
+
+
+def get_hyperparams():
+    return {
+        "lgb":
+            {
+                "model__n_estimators": [200, 400, 700, 1000, 1500],
+                "model__learning_rate": [0.003, 0.01, 0.03, 0.05, 0.1],
+                "model__num_leaves": [31, 63, 127, 255],
+                "model__max_depth": [-1, 4, 6, 8, 12],
+                "model__min_child_samples": [5, 10, 20, 40, 80],
+                "model__subsample": [0.6, 0.7, 0.8, 0.9, 1.0],
+                "model__colsample_bytree": [0.6, 0.7, 0.8, 0.9, 1.0],
+                "model__reg_alpha": [0, 0.1, 0.3, 0.5, 1.0],
+                "model__reg_lambda": [0, 0.1, 0.3, 0.5, 1.0],
+
+            },
+        "xgb":
+            {
+                "model__n_estimators": [300, 600, 900, 1200],
+                "model__learning_rate": [0.003, 0.01, 0.03, 0.05, 0.1],
+                "model__max_depth": [3, 4, 5, 6, 8],
+                "model__min_child_weight": [1, 2, 4, 6, 10],
+                "model__subsample": [0.6, 0.7, 0.8, 0.9, 1.0],
+                "model__colsample_bytree": [0.6, 0.7, 0.8, 0.9, 1.0],
+                "model__gamma": [0, 0.1, 0.3, 0.5, 1.0],
+                "model__reg_alpha": [0, 0.1, 0.3, 1.0],
+                "model__reg_lambda": [0.1, 0.3, 1.0, 3.0],
+            },
+        "cat":
+            {
+                "model__depth": [4, 5, 6, 8, 10],
+                "model__learning_rate": [0.003, 0.01, 0.03, 0.05],
+                "model__iterations": [500, 800, 1200, 1600],
+                "model__l2_leaf_reg": [1, 3, 5, 7, 9, 15],
+                "model__bagging_temperature": [0, 0.25, 0.5, 1.0],
+                "model__random_strength": [1, 5, 10, 20],
+            }
+    }
+
+
+def run_grid_search(X, y):
+    models = get_models()
+    hyperparams = get_hyperparams()
+
     scoring = {
         "MAE": make_scorer(mean_absolute_error, greater_is_better=False),
         "RMSE": make_scorer(root_mean_squared_error, greater_is_better=False),
         "R2": make_scorer(r2_score)
     }
 
-    grid_search = RandomizedSearchCV(
-        estimator=pipeline,
-        param_distributions=param_grid,
-        refit="RMSE",
-        n_iter=300,
-        scoring=scoring,
-        cv=RollingWindowCV(train_size=cv_training_window, n_splits=cv_folds),
-        verbose=2,
-        n_jobs=-1
-    )
-    grid_search.fit(X, y)
-    return grid_search
+    models_grid_search = {}
+
+    for name, model in models.items():
+        pipeline = build_pipeline(model)
+
+        print(f"Grid Search on {name}...")
+        grid_search = RandomizedSearchCV(
+            estimator=pipeline,
+            param_distributions=hyperparams[name],
+            refit="RMSE",
+            n_iter=100,
+            scoring=scoring,
+            cv=RollingWindowCV(),
+            verbose=0,
+            n_jobs=-1
+        )
+        grid_search.fit(X, y)
+        models_grid_search[name] = grid_search
+
+    return models_grid_search
 
 
 def create_directory():
@@ -177,15 +208,21 @@ def save_performance(performance):
         json.dump(performance, f, indent=4)
 
 
-def save_model(model):
+def save_model_meta(name, model, metrics):
     """ Save the trained model to a file using joblib. """
     root = Path(__file__).resolve().parent.parent
-    file_path = root / MODELS_DIR / config.RUN_DATE / 'model.pkl'
-    joblib.dump(model, file_path)
+    file_path = root / MODELS_DIR / config.RUN_DATE / f'{name}_with_rmse.pkl'
+
+    bundle = {
+        'model': model,
+        'rmse': metrics[name]['RMSE']
+    }
+
+    joblib.dump(bundle, file_path)
 
 
-def evaluate_performance(data, params, training_window=5):
-    """ Evaluate model performance on a hold-out test set. """
+def evaluate_performance(data, training_window=6):
+    """ Evaluate model performance on last year's data. """
     current_year = datetime.today().year
     train = data[data['year'].between(current_year - training_window - 1, current_year - 2)]
     X_train = train.drop(TARGET_VARIABLE, axis=1)
@@ -195,58 +232,54 @@ def evaluate_performance(data, params, training_window=5):
     X_test = test.drop(TARGET_VARIABLE, axis=1)
     y_test = test[TARGET_VARIABLE]
 
-    pipeline = build_pipeline(params)
-    pipeline.fit(X_train, y_train)
-    y_pred = pipeline.predict(X_test)
+    models = get_models()
+    models_performance = {}
+    models_pred = []
+    models_inv_rmse = []
+    for name, model in models.items():
+        pipeline = build_pipeline(model)
+        pipeline.fit(X_train, y_train)
 
-    mae = round(mean_absolute_error(y_test, y_pred), 4)
-    rmse = round(root_mean_squared_error(y_test, y_pred), 4)
-    r2 = round(r2_score(y_test, y_pred), 4)
+        y_pred = pipeline.predict(X_test)
+        models_pred.append(y_pred)
 
-    return {'MAE': mae, 'RMSE': rmse, 'R2': r2}
+        rmse = round(root_mean_squared_error(y_test, y_pred), 4)
+        mae = round(mean_absolute_error(y_test, y_pred), 4)
+        r2 = round(r2_score(y_test, y_pred), 4)
+        models_performance[name] = {'RMSE': rmse, 'MAE': mae, 'R2': r2}
+
+        models_inv_rmse.append(1/rmse)
+
+    weights = models_inv_rmse / np.sum(models_inv_rmse)
+    pred_matrix = np.column_stack(models_pred)
+    y_pred_blend = np.dot(pred_matrix, weights)
+
+    mae = round(mean_absolute_error(y_test, y_pred_blend), 4)
+    rmse = round(root_mean_squared_error(y_test, y_pred_blend), 4)
+    r2 = round(r2_score(y_test, y_pred_blend), 4)
+
+    models_performance["blend"] = {'RMSE': rmse, 'MAE': mae, 'R2': r2}
+
+    return models_performance
 
 
-def train_final_model(pipeline, data, training_window=5):
+def train_final_models(data, training_window=6):
     """ Train the final model on the most recent year. """
     current_year = datetime.today().year
     train = data[data['year'].between(current_year - training_window, current_year)]
 
     X_train = train.drop(TARGET_VARIABLE, axis=1)
     y_train = train[TARGET_VARIABLE]
-    model = pipeline.fit(X_train, y_train)
-    print("model trained.")
 
-    return model
+    models = get_models()
+    for name, model in models.items():
+        pipeline = build_pipeline(model)
+        pipeline.fit(X_train, y_train)
 
-
-def find_best_training_window(X, y, folds=3):
-    training_windows = [i for i in range(16, 21)]
-    best_window = None
-    lowest_rmse = float("inf")
-    best_hyperparams = None
-    results = {}
-
-    param_grid = get_param_grid()
-    for window in training_windows:
-        cv_pipeline = build_pipeline()
-        grid_search = run_grid_search(cv_pipeline,
-                                      param_grid,
-                                      X, y,
-                                      cv_training_window=window,
-                                      cv_folds=folds)
-        rmse = -grid_search.best_score_
-        results[window] = round(float(rmse), 4)
-
-        # Track best window
-        if rmse < lowest_rmse:
-            lowest_rmse = rmse
-            best_window = window
-            best_hyperparams = grid_search.best_params_
-
-    return results, best_window, best_hyperparams
+        yield name, pipeline
 
 
-def run(param_search=False, window_search=False):
+def run(grid_search=False):
     """ Main function to execute the training pipeline. """
     create_directory()
 
@@ -254,35 +287,21 @@ def run(param_search=False, window_search=False):
 
     X = data.drop(TARGET_VARIABLE, axis=1)
     y = data[TARGET_VARIABLE]
-    best_window = 10
 
-    if window_search:
-        results, best_window, best_hyperparams = find_best_training_window(X, y, folds=3)
-        print(results)
-        print(f"Best window = {best_window}")
+    if grid_search:
+        grid_search_results = run_grid_search(X, y)
+        hyperparams = {}
+        for model_name, grid_search in grid_search_results.items():
+            best_hyperparams = grid_search.best_params_
+            hyperparams[model_name] = {k.split("__")[1]: v for k, v in best_hyperparams.items()}
 
-    elif param_search:
-        folds = 3
-        cv_pipeline = build_pipeline()
-        param_grid = get_param_grid()
-        grid_search = run_grid_search(cv_pipeline,
-                                      param_grid,
-                                      X, y,
-                                      cv_training_window=best_window,
-                                      cv_folds=folds)
+        save_hyperparams(hyperparams)
 
-        best_hyperparams = grid_search.best_params_
+    metrics = evaluate_performance(data)
+    save_performance(metrics)
 
-        model_params = {k.split("__")[1]: v for k, v in best_hyperparams.items()}
-        metrics = evaluate_performance(data, model_params, training_window=best_window)
-
-        save_hyperparams(model_params)
-        save_performance(metrics)
-        print(metrics)
-
-    final_pipeline = build_pipeline()
-    final_model = train_final_model(final_pipeline, data, training_window=best_window)
-    save_model(final_model)
+    for name, model in train_final_models(data):
+        save_model_meta(name, model, metrics)
 
 
 if __name__ == '__main__':

@@ -8,3 +8,6 @@ predictions/
 *.pyc
 analytics/
 test.py
+test.ipynb
+env/
+catboost_info/

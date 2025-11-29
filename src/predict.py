@@ -1,6 +1,7 @@
 from pathlib import Path
 import joblib
 import pandas as pd
+import numpy as np
 
 from src import config
 
@@ -15,22 +16,42 @@ def create_directory():
     (root / PREDICTIONS_DIR / config.RUN_DATE).mkdir(exist_ok=True)
 
 
-def load_model():
+def load_model_meta(name):
     """ Load the pre-trained model from a pickle file. """
-    file_path = Path(__file__).resolve().parent.parent / config.MODELS_DIR / config.RUN_DATE / 'model.pkl'
+    file_path = Path(__file__).resolve().parent.parent / config.MODELS_DIR / config.RUN_DATE / f'{name}_with_rmse.pkl'
     return joblib.load(file_path)
 
 
-def predict_airing(model):
+def get_weighted_prediction(X):
+    models_pred = []
+    models_inv_rmse = []
+    for model_name in ['lgb', 'xgb', 'cat']:
+        meta = load_model_meta(model_name)
+        model = meta['model']
+        models_inv_rmse.append(1 / meta['rmse'])
+
+        y_pred = model.predict(X)
+        models_pred.append(y_pred)
+
+    weights = models_inv_rmse / np.sum(models_inv_rmse)
+    pred_matrix = np.column_stack(models_pred)
+
+    y_pred_blend = np.dot(pred_matrix, weights)
+    y_pred_blend = [round(x, 2) for x in y_pred_blend]
+
+    return y_pred_blend
+
+def predict_airing():
     """ Predict scores for currently airing anime using the provided model. """
     file_path = Path(__file__).resolve().parent.parent / config.DATA_DIR / config.RUN_DATE / 'anime_airing_cleaned.parquet'
     anime_airing = pd.read_parquet(file_path)
+
     X = anime_airing.drop(TARGET_VARIABLE, axis=1)
     y = anime_airing[TARGET_VARIABLE]
-    predictions = model.predict(X)
-    predictions = [round(x, 2) for x in predictions]
 
-    airing_pred = pd.DataFrame(predictions, index=X.index, columns=['predicted_score'])
+    y_pred = get_weighted_prediction(X)
+
+    airing_pred = pd.DataFrame(y_pred, index=X.index, columns=['predicted_score'])
 
     df = airing_pred.join(y, how='inner')
     df = df.join(X[['title', 'members', 'image_url']], how='inner')
@@ -38,15 +59,15 @@ def predict_airing(model):
     return df
 
 
-def predict_unreleased(model):
+def predict_unreleased():
     """ Predict scores for unreleased anime using the provided model. """
     file_path = Path(__file__).resolve().parent.parent / config.DATA_DIR / config.RUN_DATE / 'anime_unreleased_cleaned.parquet'
     anime_unreleased = pd.read_parquet(file_path)
     X = anime_unreleased.drop(TARGET_VARIABLE, axis=1)
-    predictions = model.predict(X)
-    predictions = [round(x, 2) for x in predictions]
 
-    unreleased = pd.DataFrame(predictions, index=X.index, columns=['predicted_score'])
+    y_pred = get_weighted_prediction(X)
+
+    unreleased = pd.DataFrame(y_pred, index=X.index, columns=['predicted_score'])
 
     anime_released_years = pd.DataFrame({'year': X['year']}, index=X.index)
 
@@ -68,19 +89,17 @@ def save_airing_unreleased(predictions):
     predictions.to_csv(file_path, index=True)
 
 
-def keep_most_popular_anime(df, members):
+def keep_most_popular_anime(df, n):
     """ Keep only the top N most popular anime based on the number of members. """
-    return df.nlargest(members, 'members')
+    return df.nlargest(n, 'members')
 
 
 def run():
     """ Main function to execute the prediction pipeline. """
     create_directory()
 
-    model = load_model()
-
-    airing_predictions = predict_airing(model)
-    unreleased_predictions = predict_unreleased(model)
+    airing_predictions = predict_airing()
+    unreleased_predictions = predict_unreleased()
 
     airing_predictions = keep_most_popular_anime(airing_predictions, 50)
     unreleased_predictions = keep_most_popular_anime(unreleased_predictions, 50)
