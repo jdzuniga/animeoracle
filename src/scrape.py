@@ -10,7 +10,7 @@ from src.config import (SINGLE_VALUE_FIELDS, MULTI_VALUE_FIELDS, TARGET_VARIABLE
 
 RUN_DATE = date.today().strftime("%Y-%m-%d")
 
-FROM_YEAR = 1994
+FROM_YEAR = 2000
 TO_YEAR = date.today().year + 2
 
 COLUMNS = ['title', *SINGLE_VALUE_FIELDS, *MULTI_VALUE_FIELDS, 'image_url', 'datetime', 'trailer', TARGET_VARIABLE]
