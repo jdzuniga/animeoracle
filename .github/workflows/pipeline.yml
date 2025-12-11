@@ -2,7 +2,7 @@ name: Full Pipeline and Deployment
 
 on:
   schedule:
-    - cron: "0 5 * * *"  # Daily at 7 PM Montreal
+    - cron: "0 5 * * 1"  # Daily at 7 PM Montreal
   workflow_dispatch:    # Manual trigger
 
 jobs:
